@@ -1,0 +1,34 @@
+{
+  "scenes": [
+    {
+      "id": "a45dc71d18f7470eb5ab9a6765b69a86",
+      "name": "7352.jpg",
+      "url": "/ai-offline-composer/file/scene_0c5e8bd0ca07435b8c48a9d0b622b0f7.jpg",
+      "kind": "scene"
+    },
+    {
+      "id": "54880dd139554f82a65e916dfa0b11d9",
+      "name": "7203.png",
+      "url": "/ai-offline-composer/file/scene_c3c186b6b8774053a480573791fab5d2.png",
+      "kind": "scene"
+    },
+    {
+      "id": "dbe63092771d46cc9dc5df44b2bbbd2c",
+      "name": "7141.jpg",
+      "url": "/ai-offline-composer/file/scene_f7686ac1a11e4573b35ffcb338cbd278.jpg",
+      "kind": "scene"
+    }
+  ],
+  "products": [
+    {
+      "id": "bf4482382cc648e6875048ed9bde2860",
+      "name": "7141.jpg",
+      "url": "/ai-offline-composer/file/product_bb8fa8d896ef47ad9360a4a56b64c799.jpg",
+      "kind": "product"
+    }
+  ],
+  "goal": "",
+  "placement": "right-center",
+  "scale": "42",
+  "result_note": "OFFLINE LAYOUT TEST\n\nโจทย์:\n\n\nระบบใช้เฉพาะรูปที่อัปโหลด:\n- ฉาก 3 รูป\n- สินค้า 1 รูป\n\nการทดลองนี้ไม่ได้สร้างภาพใหม่\nแต่เอาสินค้าจริงไปวางทับบนฉากจริง เพื่อดูว่าเข้ากันไหม\n\nตำแหน่งวาง:\nright-center\n\nวิธีอ่านผล:\n1. ถ้าสินค้าเด่นและไม่หายไปกับฉาก = ฉากนี้ใช้ได้\n2. ถ้าสินค้ากลืนกับพื้นหลัง = ต้องเปลี่ยนตำแหน่งหรือเพิ่มกรอบ/แสง\n3. ถ้าฉากรกมาก = ควรเลือกฉากอื่นหรือเคลียร์ฉากก่อน\n4. ถ้าพื้นที่กลาง/ล่างโล่ง = เหมาะกับการวางสินค้า\n5. ถ้าตัวหนังสือหรือของเดิมบังสินค้า = ยังไม่เหมาะกับงานเจนจริง\n\nสรุป:\nนี่คือห้องทดลองว่า AI/ระบบควรวางของเข้ากับฉากได้ไหมแบบออฟไลน์ก่อนต่อ API จริง\n"
+}

@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+:root{
+    --zone-accent:#9b5cff;
+    --zone-accent-2:#37d5ff;
+    --zone-bg:
+        linear-gradient(rgba(3,5,15,.25), rgba(3,5,15,.88)),
+        url("/static/zones/creative-zone.png");
+}
+
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    background:#02040b;
+    color:#fff;
+    overflow:hidden;
+}
+
+.zone-page{
+    min-height:100dvh;
+    padding:16px 16px 92px;
+    background-image:var(--zone-bg);
+    background-size:cover;
+    background-position:center;
+    background-attachment:fixed;
+    position:relative;
+}
+
+.zone-page::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+        radial-gradient(circle at 50% 15%, transparent 0 25%, rgba(0,0,0,.35) 75%),
+        linear-gradient(to bottom, rgba(2,4,11,.12), rgba(2,4,11,.78));
+    pointer-events:none;
+}
+
+.zone-shell{
+    position:relative;
+    z-index:1;
+    max-width:980px;
+    height:calc(100dvh - 108px);
+    margin:auto;
+    display:flex;
+    flex-direction:column;
+}
+
+.zone-search{
+    height:54px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 18px;
+    border:1px solid rgba(255,255,255,.36);
+    border-radius:28px;
+    background:rgba(4,6,16,.58);
+    backdrop-filter:blur(16px);
+    box-shadow:0 0 24px color-mix(in srgb, var(--zone-accent) 30%, transparent);
+}
+
+.zone-search input{
+    flex:1;
+    min-width:0;
+    border:0;
+    outline:0;
+    color:#fff;
+    font-size:16px;
+    background:transparent;
+}
+
+.zone-search input::placeholder{color:rgba(255,255,255,.66)}
+
+.zone-hero{
+    text-align:center;
+    padding:18px 8px 12px;
+}
+
+.zone-hero h1{
+    margin:0;
+    font-size:clamp(38px,8vw,76px);
+    line-height:.98;
+    text-shadow:0 5px 25px rgba(0,0,0,.65);
+}
+
+.zone-hero p{
+    margin:12px 0 10px;
+    font-size:clamp(14px,2.4vw,20px);
+    color:rgba(255,255,255,.9);
+}
+
+.zone-member-bar{
+    width:max-content;
+    max-width:100%;
+    margin:auto;
+    padding:10px 22px;
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:999px;
+    background:rgba(5,7,16,.58);
+    backdrop-filter:blur(12px);
+    color:#fff;
+}
+
+.zone-grid{
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-rows:repeat(4,minmax(0,1fr));
+    gap:10px;
+    margin-top:10px;
+}
+
+.zone-card,
+.zone-nav-card{
+    position:relative;
+    min-width:0;
+    min-height:0;
+    border:1px solid rgba(255,255,255,.65);
+    border-radius:18px;
+    overflow:hidden;
+    background:rgba(4,6,14,.74);
+    box-shadow:
+        0 0 14px color-mix(in srgb, var(--zone-accent) 46%, transparent),
+        inset 0 0 22px rgba(255,255,255,.035);
+}
+
+.zone-card[hidden]{display:none}
+
+.zone-card button{
+    border:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    color:inherit;
+    background:transparent;
+    cursor:pointer;
+}
+
+.zone-card img{
+    width:100%;
+    height:100%;
+    display:block;
+    object-fit:cover;
+}
+
+.zone-empty{
+    width:100%;
+    height:100%;
+    display:grid;
+    place-items:center;
+    color:rgba(255,255,255,.25);
+    font-size:28px;
+}
+
+.zone-card-meta{
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:20px 9px 8px;
+    font-size:12px;
+    background:linear-gradient(transparent,rgba(0,0,0,.88));
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    pointer-events:none;
+}
+
+.zone-dot{
+    position:absolute;
+    top:8px;
+    left:8px;
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:var(--zone-accent-2);
+    box-shadow:0 0 9px var(--zone-accent-2);
+    z-index:2;
+}
+
+.zone-arrow{
+    position:absolute;
+    right:7px;
+    bottom:7px;
+    width:24px;
+    height:24px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(255,255,255,.6);
+    border-radius:50%;
+    background:rgba(0,0,0,.48);
+    pointer-events:none;
+}
+
+.zone-nav-card{
+    display:grid;
+    place-items:center;
+    font-size:15px;
+    font-weight:700;
+    color:#fff;
+    cursor:pointer;
+}
+
+.zone-nav-card span{
+    display:block;
+    font-size:32px;
+    line-height:1;
+    margin-bottom:6px;
+    color:var(--zone-accent-2);
+}
+
+.zone-nav-card:disabled{
+    opacity:.28;
+    cursor:not-allowed;
+}
+
+.zone-footer{
+    position:fixed;
+    z-index:5;
+    left:16px;
+    right:16px;
+    bottom:12px;
+    height:68px;
+    max-width:980px;
+    margin:auto;
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    align-items:center;
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:26px;
+    background:rgba(3,5,12,.88);
+    backdrop-filter:blur(18px);
+}
+
+.zone-footer a{
+    color:rgba(255,255,255,.75);
+    text-decoration:none;
+    text-align:center;
+    font-size:12px;
+}
+
+.zone-footer .active{color:var(--zone-accent-2)}
+.zone-footer .infinity{font-size:30px;color:#74dcff}
+
+@media(max-width:700px){
+    .zone-page{padding:10px 10px 84px}
+    .zone-shell{height:calc(100dvh - 94px)}
+    .zone-search{height:46px}
+    .zone-hero{padding:12px 4px 8px}
+    .zone-hero h1{font-size:36px}
+    .zone-hero p{margin:7px 0}
+    .zone-member-bar{padding:7px 15px;font-size:13px}
+    .zone-grid{gap:7px}
+    .zone-card,.zone-nav-card{border-radius:12px}
+    .zone-card-meta{font-size:10px;padding:15px 6px 5px}
+    .zone-dot{top:5px;left:5px;width:7px;height:7px}
+    .zone-arrow{right:4px;bottom:4px;width:19px;height:19px;font-size:11px}
+    .zone-footer{left:8px;right:8px;bottom:7px;height:62px}
+}
+</style>
+
+<div
+    class="zone-page"
+    id="zone-page"
+    data-zone="{{ zone_slug }}"
+>
+    <div class="zone-shell">
+        <div class="zone-search">
+            <span>⌕</span>
+            <input id="zone-search" type="search" placeholder="ค้นหาในโซน...">
+            <span>☷</span>
+        </div>
+
+        <header class="zone-hero">
+            <h1 id="zone-title">Zone</h1>
+            <p id="zone-subtitle">พบกับสมาชิกและผลงานในโซนนี้ ✨</p>
+            <div class="zone-member-bar">
+                👥 <span id="zone-count">0</span> รายการ
+                &nbsp; • &nbsp; INFINI ›
+            </div>
+        </header>
+
+        <section id="zone-grid" class="zone-grid"></section>
+    </div>
+</div>
+
+<nav class="zone-footer">
+    <a href="/workspace">⌂<br>หน้าหลัก</a>
+    <a class="active" href="/zone/{{ zone_slug }}">◉<br>โซน</a>
+    <a class="infinity" href="/workspace">∞</a>
+    <a href="/chat">♧<br>แชท</a>
+    <a href="/workspace">♙<br>โปรไฟล์</a>
+</nav>
+
+<script>
+(() => {
+    const slug = {{ zone_slug|tojson }};
+    const rawSheets = {{ sheets|tojson }};
+
+    const themes = {
+        creative: {
+            title: "Creative Zone",
+            accent: "#b45cff",
+            accent2: "#55e7ff",
+            image: "/static/zones/creative-zone.png"
+        },
+        shop: {
+            title: "โซนร้านค้า",
+            accent: "#f2a33a",
+            accent2: "#ffd27a",
+            image: "/static/zones/shop-zone.png"
+        },
+        office: {
+            title: "Office Zone",
+            accent: "#3d8cff",
+            accent2: "#62dcff",
+            image: "/static/zones/office-zone.png"
+        },
+        personal: {
+            title: "Personal Zone",
+            accent: "#e25cac",
+            accent2: "#ff8bd1",
+            image: "/static/zones/personal-zone.png"
+        }
+    };
+
+    const key = String(slug || "creative").toLowerCase();
+    const theme =
+        themes[key] ||
+        themes[key.replace("-zone","")] ||
+        themes.creative;
+
+    document.documentElement.style.setProperty("--zone-accent", theme.accent);
+    document.documentElement.style.setProperty("--zone-accent-2", theme.accent2);
+    document.documentElement.style.setProperty(
+        "--zone-bg",
+        `linear-gradient(rgba(3,5,15,.12),rgba(3,5,15,.78)),url("${theme.image}")`
+    );
+
+    document.getElementById("zone-title").textContent = theme.title;
+    document.getElementById("zone-search").placeholder =
+        `ค้นหาใน ${theme.title}...`;
+
+    const normalized = (Array.isArray(rawSheets) ? rawSheets : []).map((item, index) => ({
+        id: item.id || item.sheet_id || index,
+        title: item.title || item.name || `รายการ ${index + 1}`,
+        image:
+            item.image_url ||
+            item.cover_url ||
+            item.thumbnail ||
+            item.cover ||
+            item.image ||
+            "",
+        url: item.url || `/sheet/${item.id || item.sheet_id || ""}`,
+        zone:
+            String(
+                item.zone_id ||
+                item.zone_slug ||
+                item.zone ||
+                ""
+            ).trim().toLowerCase()
+    }));
+
+    let items = normalized.filter(item => {
+        if (!item.zone) return false;
+        return item.zone === key ||
+            item.zone === key.replace("-zone","") ||
+            `${item.zone}-zone` === key;
+    });
+
+    // ระหว่างที่ข้อมูลเก่ายังไม่มี zone_id ให้หน้า Zone ยังแสดงได้
+    if (items.length === 0) {
+        items = normalized;
+    }
+
+    const grid = document.getElementById("zone-grid");
+    const search = document.getElementById("zone-search");
+    const count = document.getElementById("zone-count");
+
+    const perPage = 14;
+    let page = 0;
+    let query = "";
+
+    function cardHtml(item) {
+        const safeTitle = String(item.title || "");
+        const image = item.image
+            ? `<img src="${item.image}" alt="${safeTitle}">`
+            : `<div class="zone-empty">▧</div>`;
+
+        return `
+            <article class="zone-card">
+                <button type="button" data-url="${item.url}">
+                    <span class="zone-dot"></span>
+                    ${image}
+                    <span class="zone-card-meta">${safeTitle}</span>
+                    <span class="zone-arrow">›</span>
+                </button>
+            </article>
+        `;
+    }
+
+    function render() {
+        const filtered = items.filter(item =>
+            String(item.title).toLowerCase().includes(query)
+        );
+
+        const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+        page = Math.min(page, totalPages - 1);
+
+        const start = page * perPage;
+        const visible = filtered.slice(start, start + perPage);
+
+        let html = visible.map(cardHtml).join("");
+
+        while (visible.length < perPage) {
+            visible.push(null);
+            html += `
+                <article class="zone-card">
+                    <div class="zone-empty">▧</div>
+                </article>
+            `;
+        }
+
+        html += `
+            <button
+                type="button"
+                class="zone-nav-card"
+                id="zone-prev"
+                ${page === 0 ? "disabled" : ""}
+            >
+                <div><span>←</span>ย้อนกลับ</div>
+            </button>
+
+            <button
+                type="button"
+                class="zone-nav-card"
+                id="zone-next"
+                ${page >= totalPages - 1 ? "disabled" : ""}
+            >
+                <div><span>→</span>ถัดไป</div>
+            </button>
+        `;
+
+        grid.innerHTML = html;
+        count.textContent = filtered.length;
+
+        grid.querySelectorAll(".zone-card button[data-url]").forEach(button => {
+            button.addEventListener("click", () => {
+                const url = button.dataset.url;
+                if (url) window.location.href = url;
+            });
+        });
+
+        document.getElementById("zone-prev")?.addEventListener("click", () => {
+            if (page > 0) {
+                page--;
+                render();
+            }
+        });
+
+        document.getElementById("zone-next")?.addEventListener("click", () => {
+            if (page < totalPages - 1) {
+                page++;
+                render();
+            }
+        });
+    }
+
+    search.addEventListener("input", event => {
+        query = event.target.value.trim().toLowerCase();
+        page = 0;
+        render();
+    });
+
+    let startX = 0;
+
+    grid.addEventListener("touchstart", event => {
+        startX = event.changedTouches[0].clientX;
+    }, { passive:true });
+
+    grid.addEventListener("touchend", event => {
+        const diff = event.changedTouches[0].clientX - startX;
+        if (Math.abs(diff) < 70) return;
+
+        if (diff < 0) {
+            document.getElementById("zone-next")?.click();
+        } else {
+            document.getElementById("zone-prev")?.click();
+        }
+    }, { passive:true });
+
+    render();
+})();
+</script>
+{% endblock %}

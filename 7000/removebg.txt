@@ -1,0 +1,81 @@
+        function removeBg(){
+          if(!selected){
+            alert('แตะเลือกรูปสินค้าก่อน แล้วค่อยกด Remove Background');
+            return;
+          }
+
+          const srcImg = selected.img;
+          const w = srcImg.naturalWidth || srcImg.width;
+          const h = srcImg.naturalHeight || srcImg.height;
+
+          const t = document.createElement('canvas');
+          t.width = w;
+          t.height = h;
+          const tx = t.getContext('2d', {willReadFrequently:true});
+          tx.drawImage(srcImg, 0, 0, w, h);
+
+          let imgData;
+          try{
+            imgData = tx.getImageData(0,0,w,h);
+          }catch(e){
+            alert('รูปนี้ตัดพื้นหลังไม่ได้ อาจติด cross-origin ให้ลองอัปโหลดจากเครื่องหรือใช้รูป PNG');
+            return;
+          }
+
+          const d = imgData.data;
+
+          function pix(x,y){
+            const i = (y*w + x) * 4;
+            return [d[i], d[i+1], d[i+2]];
+          }
+
+          const samples = [
+            pix(2,2),
+            pix(w-3,2),
+            pix(2,h-3),
+            pix(w-3,h-3),
+            pix(Math.floor(w/2),2),
+            pix(Math.floor(w/2),h-3),
+            pix(2,Math.floor(h/2)),
+            pix(w-3,Math.floor(h/2))
+          ];
+
+          let br=0,bg=0,bb=0;
+          samples.forEach(c=>{
+            br += c[0]; bg += c[1]; bb += c[2];
+          });
+          br /= samples.length;
+          bg /= samples.length;
+          bb /= samples.length;
+
+          const tolerance = 58;
+
+          for(let y=0;y<h;y++){
+            for(let x=0;x<w;x++){
+              const i = (y*w + x) * 4;
+              const r = d[i], g = d[i+1], b = d[i+2];
+
+              const dist = Math.sqrt(
+                (r-br)*(r-br) +
+                (g-bg)*(g-bg) +
+                (b-bb)*(b-bb)
+              );
+
+              if(dist < tolerance){
+                d[i+3] = 0;
+              }else if(dist < tolerance + 28){
+                d[i+3] = Math.max(0, Math.min(255, (dist - tolerance) * 9));
+              }
+            }
+          }
+
+          tx.putImageData(imgData,0,0);
+
+          const out = new Image();
+          out.onload = ()=>{
+            selected.img = out;
+            selected.w = out.width;
+            selected.h = out.height;
+            selected.removeBg = true;
+            draw();
+          };

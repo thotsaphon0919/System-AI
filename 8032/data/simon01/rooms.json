@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "rooms": [
+    {
+      "room_id": "life_simon01",
+      "room_type": "life",
+      "name": "🏠 ห้องชีวิต",
+      "default_ai": "openai",
+      "relationship_score": 4.0,
+      "created_at": "2026-07-03T17:50:45.076746"
+    },
+    {
+      "room_id": "work_simon01",
+      "room_type": "work",
+      "name": "💼 ห้องงาน",
+      "default_ai": "openai",
+      "relationship_score": 0.0,
+      "created_at": "2026-07-03T17:50:45.076815"
+    },
+    {
+      "room_id": "store_simon01",
+      "room_type": "store",
+      "name": "🛒 ห้องร้านค้า",
+      "default_ai": "openai",
+      "relationship_score": 1.0,
+      "created_at": "2026-07-03T17:50:45.076834"
+    },
+    {
+      "room_id": "trade_simon01",
+      "room_type": "trade",
+      "name": "📈 ห้องเทรด",
+      "default_ai": "openai",
+      "relationship_score": 0.0,
+      "created_at": "2026-07-03T17:50:45.076853"
+    }
+  ]
+}

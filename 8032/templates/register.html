@@ -1,0 +1,20 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="card">
+        <h2>สมัครสมาชิก</h2>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+<video autoplay muted loop playsinline
+       style="width:100%; border-radius:16px; margin-bottom:18px;">
+  <source src="/static/videos/register_intro.mp4" type="video/mp4">
+</video>
+        <form method="post" action="/api/register">
+            <input name="username" placeholder="ตั้งชื่อผู้ใช้" required>
+            <input name="password" type="password" placeholder="ตั้งรหัสผ่าน" required>
+            <button type="submit" class="btn">ยืนยันการสมัคร</button>
+        </form>
+        <a href="/login" class="btn btn-outline">กลับเข้าสู่ระบบ</a>
+    </div>
+</div>
+{% endblock %}

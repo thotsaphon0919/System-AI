@@ -1,0 +1,1315 @@
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from pathlib import Path
+from typing import Optional, List
+import json, shutil, uuid, time, re, mimetypes
+
+APP_NAME = "INFINI Remote PRO V1"
+BASE = Path(__file__).resolve().parent
+DATA = BASE / "data"
+UPLOADS = BASE / "uploads"
+STATE = DATA / "remote_state.json"
+
+DATA.mkdir(parents=True, exist_ok=True)
+UPLOADS.mkdir(parents=True, exist_ok=True)
+
+app = FastAPI(title=APP_NAME)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS)), name="uploads")
+
+
+def now():
+    return int(time.time())
+
+
+def uid(prefix: str):
+    return f"{prefix}_{uuid.uuid4().hex[:10]}"
+
+
+def clean_name(name: str):
+    name = name or "upload.bin"
+    name = re.sub(r"[^a-zA-Z0-9._-]+", "-", name)
+    return name[:90] or "upload.bin"
+
+
+def media_type(filename: str, content_type: str = ""):
+    ct = (content_type or mimetypes.guess_type(filename)[0] or "").lower()
+    return "video" if ct.startswith("video/") else "image"
+
+
+def dump_model(m):
+    if hasattr(m, "model_dump"):
+        return m.model_dump(exclude_unset=True)
+    return m.dict(exclude_unset=True)
+
+
+DEFAULT_LINKS = {
+    "creative": "/creative",
+    "space": "/space",
+    "zone": "/zone",
+    "upload": "/upload-room",
+    "link": "/link-room",
+    "setting": "/setting-room",
+}
+
+
+def default_children():
+    return [
+        {
+            "id": uid("child"),
+            "title": f"ย่อย {i}",
+            "subtitle": "กด ⚙ เพื่อตั้งค่า",
+            "kind": "subslot",
+            "media_url": "",
+            "media_type": "",
+            "link_url": "",
+            "enabled": True,
+            "created_at": now(),
+            "updated_at": now(),
+        }
+        for i in range(1, 6)
+    ]
+
+
+def new_page(title="หน้าใหม่", subtitle="ปัดลงเพื่อดูช่องย่อย 5 ช่อง", media_url="", media_type=""):
+    return {
+        "id": uid("slot"),
+        "title": title,
+        "subtitle": subtitle,
+        "kind": "page",
+        "media_url": media_url,
+        "media_type": media_type,
+        "link_url": "",
+        "enabled": True,
+        "children": default_children(),
+        "created_at": now(),
+        "updated_at": now(),
+    }
+
+
+def default_state():
+    defs = [
+        ("Creative", "สร้าง/เปิดแผ่นงาน", "creative"),
+        ("Space", "หน้าสาธารณะ", "space"),
+        ("Zone", "โซน / ห้อง / ร้าน", "zone"),
+        ("Upload", "รูป / วิดีโอ", "upload"),
+        ("Link", "เชื่อมหน้า / เว็บ", "link"),
+        ("Setting", "ตั้งค่า Slot", "setting"),
+    ]
+    slots = []
+    for title, sub, kind in defs:
+        slots.append({
+            "id": uid("slot"),
+            "title": title,
+            "subtitle": sub,
+            "kind": kind,
+            "media_url": "",
+            "media_type": "",
+            "link_url": DEFAULT_LINKS.get(kind, ""),
+            "enabled": True,
+            "children": default_children(),
+            "created_at": now(),
+            "updated_at": now(),
+        })
+    return {
+        "app": APP_NAME,
+        "settings": {"active_sheet": "home", "theme": "orange-black", "port": 7000},
+        "sheets": [{
+            "id": "home",
+            "title": "INFINI REMOTE PRO",
+            "description": "หน้าแรกคือประตูเข้าแผ่น / กดแผ่น = เข้าห้องใหญ่",
+            "order": 0,
+            "created_at": now(),
+            "updated_at": now(),
+            "slots": slots,
+        }],
+    }
+
+
+def save_state(st):
+    tmp = STATE.with_suffix(".tmp")
+    with tmp.open("w", encoding="utf-8") as f:
+        json.dump(st, f, ensure_ascii=False, indent=2)
+    tmp.replace(STATE)
+    return st
+
+
+def ensure_child(ch, idx=1):
+    ch.setdefault("id", uid("child"))
+    ch.setdefault("title", f"ย่อย {idx}")
+    ch.setdefault("subtitle", "กด ⚙ เพื่อตั้งค่า")
+    ch.setdefault("kind", "subslot")
+    ch.setdefault("media_url", "")
+    ch.setdefault("media_type", "")
+    ch.setdefault("link_url", "")
+    ch.setdefault("enabled", True)
+    ch.setdefault("created_at", now())
+    ch.setdefault("updated_at", now())
+    return ch
+
+
+def ensure_slot(sl):
+    sl.setdefault("id", uid("slot"))
+    sl.setdefault("title", "Slot")
+    sl.setdefault("subtitle", "แตะใช้งาน / กด ⚙ ตั้งค่า")
+    sl.setdefault("kind", "action")
+    sl.setdefault("media_url", "")
+    sl.setdefault("media_type", "")
+    sl.setdefault("link_url", "")
+    sl.setdefault("enabled", True)
+    sl.setdefault("created_at", now())
+    sl.setdefault("updated_at", now())
+    k = str(sl.get("kind", "")).lower()
+    if not sl.get("link_url") and k in DEFAULT_LINKS:
+        sl["link_url"] = DEFAULT_LINKS[k]
+    children = sl.get("children")
+    if not isinstance(children, list):
+        children = []
+    while len(children) < 5:
+        children.append(default_children()[len(children)])
+    sl["children"] = [ensure_child(ch, i + 1) for i, ch in enumerate(children[:5])]
+    return sl
+
+
+def load_state():
+    if not STATE.exists():
+        return save_state(default_state())
+    try:
+        with STATE.open("r", encoding="utf-8") as f:
+            st = json.load(f)
+    except Exception:
+        broken = STATE.with_suffix(f".broken.{now()}.json")
+        try:
+            shutil.move(str(STATE), str(broken))
+        except Exception:
+            pass
+        st = default_state()
+
+    st.setdefault("app", APP_NAME)
+    st.setdefault("settings", {})
+    st["settings"].setdefault("active_sheet", "home")
+    st["settings"].setdefault("port", 7000)
+    st.setdefault("sheets", [])
+    if not st["sheets"]:
+        st = default_state()
+
+    for i, sh in enumerate(st["sheets"]):
+        sh.setdefault("id", "home" if i == 0 else uid("sheet"))
+        sh.setdefault("title", "INFINI REMOTE PRO" if i == 0 else "Sheet")
+        sh.setdefault("description", "")
+        sh.setdefault("order", i)
+        sh.setdefault("created_at", now())
+        sh.setdefault("updated_at", now())
+        sh.setdefault("slots", [])
+        sh["slots"] = [ensure_slot(sl) for sl in sh["slots"]]
+
+    home = st["sheets"][0]
+    home.setdefault("slots", [])
+    for sh in st["sheets"][1:]:
+        link = f"/sheet/{sh['id']}"
+        exists = any(sl.get("link_url") == link for sl in home["slots"])
+        if not exists:
+            home["slots"].append(ensure_slot({
+                "id": uid("slot"),
+                "title": sh.get("title", "Sheet"),
+                "subtitle": "แตะเข้าแผ่นนี้",
+                "kind": "sheet",
+                "media_url": "",
+                "media_type": "",
+                "link_url": link,
+                "enabled": True,
+                "created_at": now(),
+                "updated_at": now(),
+            }))
+
+    save_state(st)
+    return st
+
+
+def find_sheet(st, sheet_id):
+    for sh in st.get("sheets", []):
+        if sh.get("id") == sheet_id:
+            return sh
+    raise HTTPException(404, "sheet not found")
+
+
+def find_slot(sheet, slot_id):
+    for sl in sheet.get("slots", []):
+        if sl.get("id") == slot_id:
+            return sl
+    raise HTTPException(404, "slot not found")
+
+
+def find_child(slot, child_id):
+    for ch in slot.get("children", []):
+        if ch.get("id") == child_id:
+            return ch
+    raise HTTPException(404, "child not found")
+
+
+def save_upload_file(file: UploadFile):
+    original = clean_name(file.filename)
+    ext = Path(original).suffix or ".bin"
+    name = f"{now()}_{uuid.uuid4().hex[:8]}{ext}"
+    dest = UPLOADS / name
+    with dest.open("wb") as f:
+        shutil.copyfileobj(file.file, f)
+    return f"/uploads/{name}", media_type(name, file.content_type or "")
+
+
+class SheetIn(BaseModel):
+    title: str = "New Sheet"
+    description: str = ""
+
+
+class SlotIn(BaseModel):
+    title: str = "New Slot"
+    subtitle: str = ""
+    kind: str = "action"
+
+
+class SlotPatch(BaseModel):
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    kind: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+    link_url: Optional[str] = None
+    enabled: Optional[bool] = None
+
+
+class SettingsPatch(BaseModel):
+    active_sheet: Optional[str] = None
+
+
+HTML = r'''
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>INFINI Remote PRO V1</title>
+<style>
+:root{--bg:#050302;--card:#120905;--orange:#ff8500;--orange2:#ffb000;--line:rgba(255,133,0,.35);--text:#fff7ef;--muted:#d8b892}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(circle at top,#281204,#050302 45%,#000);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none}
+.app{padding:14px 14px 108px;max-width:980px;margin:auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.brand{display:flex;gap:10px;align-items:center}
+.logo{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--orange2),var(--orange));display:grid;place-items:center;color:#1a0800;font-weight:1000;font-size:24px;box-shadow:0 0 28px rgba(255,133,0,.35)}
+h1{font-size:18px;margin:0;letter-spacing:.04em}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.btn{border:1px solid var(--line);background:linear-gradient(180deg,#211007,#080402);color:var(--text);border-radius:15px;padding:11px 13px;font-weight:900;font-size:14px}
+.btn.primary{background:linear-gradient(135deg,var(--orange2),var(--orange));color:#180700;border-color:var(--orange2)}
+.btn.danger{color:#ffb8b8;border-color:rgba(255,80,80,.55)}
+.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:9px}
+.tab{white-space:nowrap;border:1px solid var(--line);border-radius:999px;background:rgba(255,133,0,.06);color:var(--muted);padding:9px 12px;font-weight:900}
+.tab.active{background:linear-gradient(135deg,var(--orange2),var(--orange));color:#1a0800}
+.head{border:1px solid var(--line);border-radius:24px;background:rgba(18,9,5,.74);padding:14px;margin:2px 0 14px}
+.head h2{margin:0;font-size:22px}
+.head p{margin:7px 0 0;color:#ffd7ad;font-size:14px;line-height:1.4}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(min-width:720px){.grid{grid-template-columns:repeat(3,1fr)}}
+.slot{position:relative;min-height:166px;border:1px solid var(--line);border-radius:25px;overflow:hidden;background:linear-gradient(160deg,rgba(255,133,0,.18),rgba(0,0,0,.96));box-shadow:0 18px 40px rgba(0,0,0,.35);touch-action:auto;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.slot:active{transform:scale(.985)}
+.slot.off{opacity:.45}
+.media{position:absolute;inset:0}
+.media img,.media video{width:100%;height:100%;object-fit:cover;display:block}
+.plus{position:absolute;inset:0;display:grid;place-items:center;font-size:58px;color:rgba(255,160,0,.24);font-weight:200}
+.slot:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.82));pointer-events:none}
+.body{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:14px}
+.badge{display:inline-block;border-radius:999px;background:linear-gradient(135deg,var(--orange2),var(--orange));color:#160600;font-size:12px;font-weight:1000;padding:7px 12px;text-transform:uppercase}
+.body h3{font-size:21px;margin:10px 0 4px}
+.body p{font-size:14px;margin:0;color:#ffd7ad}
+.remoteBtn{position:absolute;top:9px;right:9px;z-index:5;border:1px solid rgba(255,176,0,.55);background:rgba(0,0,0,.62);color:#ffb000;border-radius:999px;width:38px;height:38px;font-size:18px;font-weight:900}
+.bar{position:fixed;left:50%;bottom:13px;transform:translateX(-50%);width:min(960px,calc(100% - 22px));display:flex;gap:8px;padding:10px;border:1px solid var(--line);border-radius:24px;background:rgba(9,4,2,.86);backdrop-filter:blur(14px);z-index:20}
+.bar .btn{flex:1}
+.toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:99;background:#1a0b04;border:1px solid var(--line);border-radius:999px;padding:11px 15px;color:#ffd7ad;display:none}
+.toast.show{display:block}
+.back{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:40;display:none}
+.back.show{display:block}
+.drawer{position:fixed;left:0;right:0;bottom:0;z-index:50;max-height:88vh;overflow:auto;background:linear-gradient(180deg,#251006,#050302);border-top:1px solid var(--line);border-radius:28px 28px 0 0;transform:translateY(105%);transition:.22s}
+.drawer.show{transform:translateY(0)}
+.inner{padding:18px;max-width:760px;margin:auto}
+.inner h2{margin:0 0 4px}
+.small{font-size:12px;color:var(--muted);margin-bottom:12px}
+.field{margin-bottom:10px}
+label{display:block;color:#ffd7ad;font-size:12px;font-weight:900;margin-bottom:5px}
+input,textarea,select{width:100%;border:1px solid var(--line);background:#070402;color:var(--text);border-radius:14px;padding:12px;font:inherit;outline:none}
+.preview{min-height:125px;border:1px dashed var(--line);border-radius:18px;margin-bottom:12px;display:grid;place-items:center;overflow:hidden;color:#ffd7ad;background:#070402}
+.preview img,.preview video{width:100%;max-height:260px;object-fit:contain}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:80;display:none;place-items:center;padding:16px}
+.viewer.show{display:grid}
+.viewer img,.viewer video{max-width:100%;max-height:86vh;border-radius:18px}
+.closev{position:absolute;top:12px;right:12px}
+
+/* room: แผ่น = ห้องใหญ่, หน้า = ปัดซ้ายขวา, ช่องย่อย = ปัดลง */
+body.room-mode{overflow:hidden}
+body.room-mode .app{max-width:none;height:100vh;overflow:hidden;padding:12px 12px 108px}
+body.room-mode .tabs{display:none}
+body.room-mode .head{margin-bottom:10px;padding:12px 14px}
+body.room-mode .head h2:before{content:"ROOM · ";color:#ffb000}
+body.room-mode .grid{display:flex;grid-template-columns:none;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;height:calc(100vh - 236px);padding-bottom:8px}
+body.room-mode .pageSlot{min-width:calc(100vw - 24px);height:100%;min-height:360px;scroll-snap-align:center;border-radius:30px;overflow-y:auto;touch-action:pan-y;display:block;padding:0 0 14px}
+body.room-mode .pageSlot:after{display:none}
+body.room-mode .pageHero{position:relative;height:54%;min-height:300px;border-bottom:1px solid var(--line);overflow:hidden;background:rgba(255,133,0,.06)}
+body.room-mode .pageHero .media,body.room-mode .pageHero .plus{position:absolute;inset:0}
+.pageHeroShade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.82));z-index:1}
+.pageTitle{position:absolute;left:18px;right:18px;bottom:16px;z-index:2}
+.pageTitle h3{font-size:36px;margin:10px 0 4px}
+.pageTitle p{font-size:17px;margin:0;color:#ffd7ad}
+.subSlots{padding:14px;display:grid;gap:10px}
+.subSlot{position:relative;border:1px solid var(--line);border-radius:20px;background:rgba(0,0,0,.45);min-height:92px;overflow:hidden}
+.subSlot .miniMedia{position:absolute;inset:0}
+.subSlot .miniMedia img,.subSlot .miniMedia video{width:100%;height:100%;object-fit:cover;opacity:.65}
+.subSlot:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.86),rgba(0,0,0,.35));pointer-events:none}
+.subBody{position:relative;z-index:2;padding:13px 58px 13px 14px}
+.subBody b{display:block;font-size:17px}
+.subBody span{color:#ffd7ad;font-size:13px}
+.subSlot .remoteBtn{width:34px;height:34px;font-size:16px}
+.roomNote{color:#ffd7ad;font-size:12px;padding:0 16px 14px}
+
+
+/* ===== FIX: smaller text + better media fit ===== */
+.media img,
+.media video,
+.miniMedia img,
+.miniMedia video{
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+}
+
+.media{
+  background:#050302 !important;
+}
+
+.body{
+  padding:12px !important;
+}
+
+.badge{
+  font-size:10px !important;
+  padding:6px 10px !important;
+}
+
+.body h3{
+  font-size:clamp(17px, 4.6vw, 22px) !important;
+  line-height:1.05 !important;
+  margin:8px 0 4px !important;
+  display:-webkit-box !important;
+  -webkit-line-clamp:3 !important;
+  -webkit-box-orient:vertical !important;
+  overflow:hidden !important;
+  word-break:break-word !important;
+}
+
+.body p{
+  font-size:12px !important;
+  line-height:1.25 !important;
+  display:-webkit-box !important;
+  -webkit-line-clamp:2 !important;
+  -webkit-box-orient:vertical !important;
+  overflow:hidden !important;
+}
+
+.remoteBtn{
+  width:34px !important;
+  height:34px !important;
+  font-size:16px !important;
+  top:8px !important;
+  right:8px !important;
+}
+
+body.room-mode .pageTitle h3{
+  font-size:clamp(24px, 7vw, 34px) !important;
+  line-height:1.05 !important;
+  margin:8px 0 4px !important;
+  display:-webkit-box !important;
+  -webkit-line-clamp:2 !important;
+  -webkit-box-orient:vertical !important;
+  overflow:hidden !important;
+}
+
+body.room-mode .pageTitle p{
+  font-size:14px !important;
+  line-height:1.25 !important;
+}
+
+body.room-mode .badge{
+  font-size:11px !important;
+}
+
+.subBody b{
+  font-size:15px !important;
+  line-height:1.15 !important;
+}
+
+.subBody span{
+  font-size:12px !important;
+  line-height:1.25 !important;
+}
+
+.slot{
+  min-height:150px !important;
+}
+
+@media(max-width:420px){
+  .body h3{
+    font-size:18px !important;
+  }
+  .body p{
+    font-size:12px !important;
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <div class="logo">∞</div>
+      <div>
+        <h1>INFINI REMOTE PRO V1</h1>
+        <div class="sub" id="modeText">หน้าแรก Remote</div>
+      </div>
+    </div>
+    <button class="btn" id="shareBtn">แชร์</button>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="head"><h2 id="title">Loading</h2><p id="desc"></p></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="bar">
+  <button class="btn primary" id="addSheetBtn">+ แผ่น</button>
+  <button class="btn primary" id="addSlotBtn">+ Slot</button>
+  <button class="btn" id="copySheetBtn">คัดลอกแผ่น</button>
+</div>
+
+<input id="roomFiles" type="file" accept="image/*,video/*" multiple style="display:none">
+
+<div class="back" id="back"></div>
+
+<div class="drawer" id="drawer">
+  <div class="inner">
+    <h2 id="drawerTitle">Remote Slot</h2>
+    <div class="small" id="meta">Setting Engine</div>
+    <div class="preview" id="preview">ยังไม่มีสื่อ</div>
+
+    <div class="field"><label>ชื่อ</label><input id="fTitle"></div>
+    <div class="field"><label>คำอธิบาย</label><textarea id="fSubtitle" rows="2"></textarea></div>
+    <div class="field">
+      <label>ชนิด</label>
+      <select id="fKind">
+        <option value="page">page</option>
+        <option value="sheet">sheet</option>
+        <option value="subslot">subslot</option>
+        <option value="creative">creative</option>
+        <option value="space">space</option>
+        <option value="zone">zone</option>
+        <option value="upload">upload</option>
+        <option value="link">link</option>
+        <option value="setting">setting</option>
+        <option value="action">action</option>
+      </select>
+    </div>
+    <div class="field"><label>ลิงก์ที่แตะแล้วเปิด</label><input id="fLink" placeholder="/sheet/... หรือ https://..."></div>
+    <div class="field"><label>รูป / วิดีโอ</label><input id="fFile" type="file" accept="image/*,video/*"></div>
+    <div class="field"><label><input id="fEnabled" type="checkbox"> เปิดใช้งาน</label></div>
+
+    <div class="actions">
+      <button class="btn primary" id="saveBtn">บันทึก</button>
+      <button class="btn" id="uploadBtn">อัปโหลด</button>
+      <button class="btn" id="clearBtn">ล้างสื่อ</button>
+      <button class="btn danger" id="deleteBtn">ลบ/รีเซ็ต</button>
+      <button class="btn" id="closeBtn">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="viewer" id="viewer">
+  <button class="btn closev" id="closeViewerBtn">ปิด</button>
+  <div id="viewerBody"></div>
+</div>
+
+<script>
+let state=null;
+let activeSheetId="home";
+let isRoomMode=false;
+let selected={type:null,sheetId:null,slotId:null,childId:null};
+
+const $=id=>document.getElementById(id);
+
+function toast(msg){
+  const t=$("toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1700);
+}
+
+async function api(url,opt={}){
+  const res=await fetch(url,{headers:{"Content-Type":"application/json",...(opt.headers||{})},...opt});
+  if(!res.ok){throw new Error(await res.text())}
+  return await res.json();
+}
+
+function sheet(){
+  return state.sheets.find(s=>s.id===activeSheetId)||state.sheets[0];
+}
+
+async function load(){
+  state=await api("/api/state");
+  const match=location.pathname.match(/^\/sheet\/([^\/]+)/);
+  if(match){
+    isRoomMode=true;
+    document.body.classList.add("room-mode");
+    activeSheetId=decodeURIComponent(match[1]);
+    await api("/api/settings",{method:"POST",body:JSON.stringify({active_sheet:activeSheetId})});
+  }else{
+    isRoomMode=false;
+    document.body.classList.remove("room-mode");
+    activeSheetId="home";
+  }
+  render();
+}
+
+function render(){
+  const s=sheet();
+
+  $("modeText").textContent=isRoomMode?"ห้องใหญ่ · ปัดซ้าย/ขวา":"หน้าแรก Remote · แตะเข้าห้อง";
+  $("addSheetBtn").textContent=isRoomMode?"← Remote":"+ แผ่น";
+  $("addSlotBtn").textContent=isRoomMode?"+ หน้า":"+ Slot";
+  $("copySheetBtn").textContent=isRoomMode?"+ รูปเป็นหน้า":"คัดลอกแผ่น";
+
+  renderTabs();
+
+  $("title").textContent=s.title||"INFINI REMOTE";
+  $("desc").textContent=isRoomMode
+    ? (s.description||"แต่ละหน้าในห้องปัดลงได้ มีช่องย่อย 5 ช่อง")
+    : (s.description||"กดแผ่นเพื่อเข้าห้องใหญ่");
+
+  const grid=$("grid");
+  grid.innerHTML="";
+
+  if(isRoomMode){
+    s.slots.forEach((slot,i)=>grid.appendChild(makePage(s,slot,i)));
+  }else{
+    s.slots.forEach(slot=>grid.appendChild(makeSlot(s,slot)));
+  }
+}
+
+function renderTabs(){
+  const box=$("tabs");
+  box.innerHTML="";
+  state.sheets.forEach(s=>{
+    const b=document.createElement("button");
+    b.className="tab "+(s.id===activeSheetId?"active":"");
+    b.textContent=s.title||"Sheet";
+    b.addEventListener("click",async()=>{
+      activeSheetId=s.id;
+      state=await api("/api/settings",{method:"POST",body:JSON.stringify({active_sheet:s.id})});
+      render();
+    });
+    box.appendChild(b);
+  });
+}
+
+function mediaHtml(obj, cls="media"){
+  if(obj.media_url&&obj.media_type==="video")return `<div class="${cls}"><video src="${obj.media_url}" muted autoplay loop playsinline></video></div>`;
+  if(obj.media_url)return `<div class="${cls}"><img src="${obj.media_url}"></div>`;
+  return '<div class="plus">+</div>';
+}
+
+function makeSlot(s,slot){
+  const el=document.createElement("div");
+  el.className="slot "+(slot.enabled===false?"off":"");
+  el.innerHTML=`
+    ${mediaHtml(slot)}
+    <button class="remoteBtn" type="button">⚙</button>
+    <div class="body">
+      <span class="badge">${esc(slot.kind||"action")}</span>
+      <h3>${esc(slot.title||"Slot")}</h3>
+      <p>${esc(slot.subtitle||"แตะใช้งาน / กด ⚙ ตั้งค่า")}</p>
+    </div>
+  `;
+  bindPress(el,()=>openSlotRemote(s.id,slot.id),()=>useSlot(s.id,slot.id));
+  el.querySelector(".remoteBtn").addEventListener("click",e=>{
+    e.preventDefault();e.stopPropagation();openSlotRemote(s.id,slot.id);
+  });
+  return el;
+}
+
+function makePage(s,slot,i){
+  const el=document.createElement("div");
+  el.className="slot pageSlot "+(slot.enabled===false?"off":"");
+  let children=(slot.children||[]).slice(0,5);
+
+  el.innerHTML=`
+    <div class="pageHero">
+      ${mediaHtml(slot)}
+      <button class="remoteBtn" type="button">⚙</button>
+      <div class="pageHeroShade"></div>
+      <div class="pageTitle">
+        <span class="badge">หน้า ${i+1}</span>
+        <h3>${esc(slot.title||"หน้า")}</h3>
+        <p>${esc(slot.subtitle||"ปัดลงเพื่อดูช่องย่อย")}</p>
+      </div>
+    </div>
+    <div class="roomNote">ปัดซ้าย/ขวาเพื่อเปลี่ยนหน้า · ปัดลงในหน้านี้เพื่อดูช่องย่อย</div>
+    <div class="subSlots"></div>
+  `;
+
+  el.querySelector(".remoteBtn").addEventListener("click",e=>{
+    e.preventDefault();e.stopPropagation();openSlotRemote(s.id,slot.id);
+  });
+
+  el.querySelector(".pageHero").addEventListener("click",e=>{
+    if(e.target.closest(".remoteBtn"))return;
+    if(slot.media_url)openViewer(slot);
+  });
+
+  const box=el.querySelector(".subSlots");
+  children.forEach((ch,idx)=>box.appendChild(makeChild(s,slot,ch,idx)));
+  return el;
+}
+
+function makeChild(s,slot,ch,idx){
+  const el=document.createElement("div");
+  el.className="subSlot";
+
+  let mini="";
+  if(ch.media_url&&ch.media_type==="video")mini=`<div class="miniMedia"><video src="${ch.media_url}" muted autoplay loop playsinline></video></div>`;
+  else if(ch.media_url)mini=`<div class="miniMedia"><img src="${ch.media_url}"></div>`;
+
+  el.innerHTML=`
+    ${mini}
+    <button class="remoteBtn" type="button">⚙</button>
+    <div class="subBody">
+      <b>${esc(ch.title||("ย่อย "+(idx+1)))}</b>
+      <span>${esc(ch.subtitle||"แตะใช้งาน / กด ⚙ ตั้งค่า")}</span>
+    </div>
+  `;
+
+  el.addEventListener("click",e=>{
+    if(e.target.closest(".remoteBtn"))return;
+    useChild(s.id,slot.id,ch.id);
+  });
+
+  el.querySelector(".remoteBtn").addEventListener("click",e=>{
+    e.preventDefault();e.stopPropagation();openChildRemote(s.id,slot.id,ch.id);
+  });
+
+  return el;
+}
+
+function bindPress(el,onLong,onTap){
+  let sx=0,sy=0,fired=false,timer=null;
+
+  function clear(){
+    if(timer){clearTimeout(timer);timer=null;}
+  }
+
+  el.addEventListener("pointerdown",e=>{
+    if(e.target.closest(".remoteBtn"))return;
+    fired=false;
+    sx=e.clientX;sy=e.clientY;
+    clear();
+    timer=setTimeout(()=>{
+      fired=true;
+      if(navigator.vibrate)navigator.vibrate(35);
+      onLong();
+    },650);
+  });
+
+  el.addEventListener("pointermove",e=>{
+    if(Math.abs(e.clientX-sx)>24||Math.abs(e.clientY-sy)>24)clear();
+  });
+
+  el.addEventListener("pointerup",e=>{
+    if(e.target.closest(".remoteBtn"))return;
+    clear();
+    if(fired){
+      e.preventDefault();e.stopPropagation();return;
+    }
+    onTap();
+  });
+
+  el.addEventListener("pointercancel",clear);
+  el.addEventListener("pointerleave",clear);
+  el.addEventListener("contextmenu",e=>e.preventDefault());
+}
+
+function esc(x){
+  return String(x||"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+}
+
+function getSlot(sheetId,slotId){
+  const sh=state.sheets.find(x=>x.id===sheetId);
+  return sh.slots.find(x=>x.id===slotId);
+}
+
+function getChild(sheetId,slotId,childId){
+  return getSlot(sheetId,slotId).children.find(x=>x.id===childId);
+}
+
+function useSlot(sheetId,slotId){
+  const slot=getSlot(sheetId,slotId);
+
+  if(slot.enabled===false){toast("Slot นี้ปิดอยู่");return;}
+
+  if(slot.link_url&&slot.link_url.trim()){
+    location.href=slot.link_url;
+    return;
+  }
+
+  if(slot.media_url&&slot.media_url.trim()){
+    openViewer(slot);
+    return;
+  }
+
+  openSlotRemote(sheetId,slotId);
+}
+
+function useChild(sheetId,slotId,childId){
+  const ch=getChild(sheetId,slotId,childId);
+
+  if(ch.enabled===false){toast("ช่องนี้ปิดอยู่");return;}
+
+  if(ch.link_url&&ch.link_url.trim()){
+    location.href=ch.link_url;
+    return;
+  }
+
+  if(ch.media_url&&ch.media_url.trim()){
+    openViewer(ch);
+    return;
+  }
+
+  openChildRemote(sheetId,slotId,childId);
+}
+
+function openSlotRemote(sheetId,slotId){
+  selected={type:"slot",sheetId,slotId,childId:null};
+  const slot=getSlot(sheetId,slotId);
+  $("drawerTitle").textContent=isRoomMode?"Remote Page":"Remote Slot";
+  fillForm(slot,`Sheet / ${slot.title}`);
+}
+
+function openChildRemote(sheetId,slotId,childId){
+  selected={type:"child",sheetId,slotId,childId};
+  const ch=getChild(sheetId,slotId,childId);
+  $("drawerTitle").textContent="Remote ช่องย่อย";
+  fillForm(ch,`ช่องย่อย / ${ch.title}`);
+}
+
+function fillForm(obj,meta){
+  $("meta").textContent=meta;
+  $("fTitle").value=obj.title||"";
+  $("fSubtitle").value=obj.subtitle||"";
+  $("fKind").value=obj.kind||"action";
+  $("fLink").value=obj.link_url||"";
+  $("fEnabled").checked=obj.enabled!==false;
+  $("fFile").value="";
+  showPreview(obj);
+  $("back").classList.add("show");
+  $("drawer").classList.add("show");
+}
+
+function closeRemote(){
+  $("back").classList.remove("show");
+  $("drawer").classList.remove("show");
+}
+
+function showPreview(obj){
+  const p=$("preview");
+  if(obj.media_url&&obj.media_type==="video")p.innerHTML=`<video src="${obj.media_url}" controls playsinline></video>`;
+  else if(obj.media_url)p.innerHTML=`<img src="${obj.media_url}">`;
+  else p.textContent="ยังไม่มีสื่อ";
+}
+
+async function saveTarget(){
+  const body={
+    title:$("fTitle").value,
+    subtitle:$("fSubtitle").value,
+    kind:$("fKind").value,
+    link_url:$("fLink").value,
+    enabled:$("fEnabled").checked
+  };
+
+  if(selected.type==="child"){
+    state=await api(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}/children/${selected.childId}`,{method:"PATCH",body:JSON.stringify(body)});
+  }else{
+    state=await api(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}`,{method:"PATCH",body:JSON.stringify(body)});
+  }
+
+  toast("บันทึกแล้ว");
+  render();
+}
+
+async function uploadTarget(){
+  const file=$("fFile").files[0];
+  if(!file){toast("เลือกรูปหรือวิดีโอก่อน");return;}
+
+  const fd=new FormData();
+  fd.append("file",file);
+
+  let url=selected.type==="child"
+    ? `/api/sheets/${selected.sheetId}/slots/${selected.slotId}/children/${selected.childId}/upload`
+    : `/api/sheets/${selected.sheetId}/slots/${selected.slotId}/upload`;
+
+  const res=await fetch(url,{method:"POST",body:fd});
+  if(!res.ok){toast("อัปโหลดไม่สำเร็จ");return;}
+
+  state=await res.json();
+  toast("อัปโหลดแล้ว");
+  render();
+}
+
+async function clearTarget(){
+  const body={media_url:"",media_type:""};
+
+  if(selected.type==="child"){
+    state=await api(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}/children/${selected.childId}`,{method:"PATCH",body:JSON.stringify(body)});
+  }else{
+    state=await api(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}`,{method:"PATCH",body:JSON.stringify(body)});
+  }
+
+  toast("ล้างสื่อแล้ว");
+  render();
+}
+
+async function deleteTarget(){
+  if(selected.type==="child"){
+    state=await api(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}/children/${selected.childId}`,{
+      method:"PATCH",
+      body:JSON.stringify({title:"ช่องย่อย",subtitle:"กด ⚙ เพื่อตั้งค่า",kind:"subslot",media_url:"",media_type:"",link_url:"",enabled:true})
+    });
+    toast("รีเซ็ตช่องย่อยแล้ว");
+    render();
+    return;
+  }
+
+  if(!confirm("ลบหน้านี้/Slot นี้ใช่ไหม"))return;
+
+  state=await api(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}`,{method:"DELETE"});
+  closeRemote();
+  toast("ลบแล้ว");
+  render();
+}
+
+async function addSheet(){
+  if(isRoomMode){
+    location.href="/";
+    return;
+  }
+
+  const title=prompt("ชื่อแผ่นใหม่","ห้องใหม่");
+  if(title===null)return;
+
+  state=await api("/api/sheets",{method:"POST",body:JSON.stringify({title})});
+  toast("สร้างแผ่นและประตูเข้าแล้ว");
+  render();
+}
+
+async function addSlot(){
+  if(isRoomMode){
+    const title=prompt("ชื่อหน้าใหม่","หน้า "+(sheet().slots.length+1));
+    if(title===null)return;
+
+    state=await api(`/api/sheets/${activeSheetId}/slots`,{
+      method:"POST",
+      body:JSON.stringify({title,kind:"page",subtitle:"ปัดลงเพื่อดูช่องย่อย 5 ช่อง"})
+    });
+
+    toast("เพิ่มหน้าแล้ว");
+    render();
+    setTimeout(()=>{$("grid").scrollLeft=$("grid").scrollWidth},80);
+    return;
+  }
+
+  const title=prompt("ชื่อ Slot ใหม่","New Slot");
+  if(title===null)return;
+
+  state=await api(`/api/sheets/${activeSheetId}/slots`,{
+    method:"POST",
+    body:JSON.stringify({title,kind:"action"})
+  });
+
+  toast("เพิ่ม Slot แล้ว");
+  render();
+}
+
+async function copySheet(){
+  if(isRoomMode){
+    $("roomFiles").click();
+    return;
+  }
+
+  state=await api(`/api/sheets/${activeSheetId}/duplicate`,{method:"POST",body:"{}"});
+  toast("คัดลอกแผ่นแล้ว");
+  render();
+}
+
+async function uploadPages(files){
+  if(!files.length)return;
+
+  const fd=new FormData();
+  [...files].forEach(f=>fd.append("files",f));
+
+  const res=await fetch(`/api/sheets/${activeSheetId}/upload-pages`,{method:"POST",body:fd});
+  if(!res.ok){toast("สร้างหน้าไม่สำเร็จ");return;}
+
+  state=await res.json();
+  toast("สร้างรูป/วิดีโอเป็นหน้าแล้ว");
+  render();
+  setTimeout(()=>{$("grid").scrollLeft=$("grid").scrollWidth},100);
+}
+
+function openViewer(obj){
+  const b=$("viewerBody");
+  b.innerHTML=obj.media_type==="video"
+    ? `<video src="${obj.media_url}" controls autoplay playsinline></video>`
+    : `<img src="${obj.media_url}">`;
+  $("viewer").classList.add("show");
+}
+
+function closeViewer(){
+  $("viewer").classList.remove("show");
+}
+
+$("addSheetBtn").addEventListener("click",addSheet);
+$("addSlotBtn").addEventListener("click",addSlot);
+$("copySheetBtn").addEventListener("click",copySheet);
+$("roomFiles").addEventListener("change",e=>uploadPages(e.target.files));
+
+$("shareBtn").addEventListener("click",async()=>{
+  try{
+    await navigator.clipboard.writeText(location.href);
+    toast("คัดลอกลิงก์แล้ว");
+  }catch(e){
+    prompt("Copy link",location.href);
+  }
+});
+
+$("back").addEventListener("click",closeRemote);
+$("closeBtn").addEventListener("click",closeRemote);
+$("saveBtn").addEventListener("click",saveTarget);
+$("uploadBtn").addEventListener("click",uploadTarget);
+$("clearBtn").addEventListener("click",clearTarget);
+$("deleteBtn").addEventListener("click",deleteTarget);
+$("closeViewerBtn").addEventListener("click",closeViewer);
+
+$("viewer").addEventListener("click",e=>{
+  if(e.target.id==="viewer")closeViewer();
+});
+
+load().catch(e=>{
+  console.error(e);
+  toast("โหลดผิดพลาด");
+});
+</script>
+</body>
+</html>
+'''
+
+
+def simple_page(title, desc):
+    return f"""<!doctype html><html lang='th'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>{title}</title><style>body{{margin:0;min-height:100vh;background:radial-gradient(circle at top,#2b1304,#050302 48%,#000);color:#fff7ef;font-family:system-ui;padding:18px}}.card{{max-width:720px;margin:30px auto;border:1px solid rgba(255,133,0,.35);border-radius:28px;background:rgba(18,9,5,.75);padding:22px}}h1{{margin:0 0 10px;font-size:32px}}p{{color:#ffd7ad;line-height:1.55}}a{{display:inline-block;margin-top:16px;background:linear-gradient(135deg,#ffb000,#ff8500);color:#190700;text-decoration:none;border-radius:16px;padding:12px 16px;font-weight:900}}
+</style></head><body><div class='card'><h1>{title}</h1><p>{desc}</p><a href='/'>← กลับ Remote</a></div></body></html>"""
+
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return HTMLResponse(HTML)
+
+
+@app.get("/sheet/{sheet_id}", response_class=HTMLResponse)
+def open_sheet_page(sheet_id: str):
+    return HTMLResponse(HTML)
+
+
+@app.get("/creative", response_class=HTMLResponse)
+def creative():
+    return HTMLResponse(simple_page("Creative", "ห้องสร้างแผ่นงาน"))
+
+
+@app.get("/space", response_class=HTMLResponse)
+def space():
+    return HTMLResponse(simple_page("Space", "หน้าสาธารณะ"))
+
+
+@app.get("/zone", response_class=HTMLResponse)
+def zone():
+    return HTMLResponse(simple_page("Zone", "โซน / ห้อง / ร้าน"))
+
+
+@app.get("/upload-room", response_class=HTMLResponse)
+def upload_room():
+    return HTMLResponse(simple_page("Upload Engine", "ห้องอัปโหลด"))
+
+
+@app.get("/link-room", response_class=HTMLResponse)
+def link_room():
+    return HTMLResponse(simple_page("Link Engine", "ห้องเชื่อมลิงก์"))
+
+
+@app.get("/setting-room", response_class=HTMLResponse)
+def setting_room():
+    return HTMLResponse(simple_page("Setting Engine", "ห้องตั้งค่า"))
+
+
+@app.get("/health")
+def health():
+    return {"ok": True, "app": APP_NAME, "port": 7000}
+
+
+@app.get("/api/state")
+def api_state():
+    return JSONResponse(load_state())
+
+
+@app.post("/api/settings")
+def api_settings(p: SettingsPatch):
+    st = load_state()
+    data = dump_model(p)
+    for k, v in data.items():
+        if v is not None:
+            st["settings"][k] = v
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.post("/api/sheets")
+def api_add_sheet(p: SheetIn):
+    st = load_state()
+    sheet_id = uid("sheet")
+    title = p.title.strip() or "ห้องใหม่"
+
+    sheet = {
+        "id": sheet_id,
+        "title": title,
+        "description": p.description.strip() or "ห้องใหญ่ของแผ่นนี้ · ปัดซ้ายขวาเป็นหน้า · ปัดลงเป็นช่องย่อย",
+        "order": len(st["sheets"]),
+        "created_at": now(),
+        "updated_at": now(),
+        "slots": [new_page("หน้า 1", "กด + รูปเป็นหน้า หรือกด ⚙ เพื่ออัปโหลด")],
+    }
+
+    st["sheets"].append(sheet)
+
+    home = st["sheets"][0]
+    home.setdefault("slots", [])
+    home["slots"].append(ensure_slot({
+        "id": uid("slot"),
+        "title": title,
+        "subtitle": "แตะเข้าแผ่นนี้",
+        "kind": "sheet",
+        "media_url": "",
+        "media_type": "",
+        "link_url": f"/sheet/{sheet_id}",
+        "enabled": True,
+        "created_at": now(),
+        "updated_at": now(),
+    }))
+
+    st["settings"]["active_sheet"] = "home"
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.post("/api/sheets/{sheet_id}/duplicate")
+def api_dup_sheet(sheet_id: str):
+    st = load_state()
+    old = find_sheet(st, sheet_id)
+
+    new = json.loads(json.dumps(old, ensure_ascii=False))
+    new["id"] = uid("sheet")
+    new["title"] = old.get("title", "Sheet") + " Copy"
+    new["order"] = len(st["sheets"])
+    new["created_at"] = now()
+    new["updated_at"] = now()
+
+    for sl in new.get("slots", []):
+        sl["id"] = uid("slot")
+        for ch in sl.get("children", []):
+            ch["id"] = uid("child")
+
+    st["sheets"].append(new)
+
+    home = st["sheets"][0]
+    home.setdefault("slots", [])
+    home["slots"].append(ensure_slot({
+        "id": uid("slot"),
+        "title": new["title"],
+        "subtitle": "แตะเข้าแผ่นนี้",
+        "kind": "sheet",
+        "media_url": "",
+        "media_type": "",
+        "link_url": f"/sheet/{new['id']}",
+        "enabled": True,
+        "created_at": now(),
+        "updated_at": now(),
+    }))
+
+    st["settings"]["active_sheet"] = "home"
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.post("/api/sheets/{sheet_id}/slots")
+def api_add_slot(sheet_id: str, p: SlotIn):
+    st = load_state()
+    sh = find_sheet(st, sheet_id)
+    kind = p.kind.strip() or "action"
+
+    if sheet_id != "home" or kind == "page":
+        sl = new_page(
+            p.title.strip() or f"หน้า {len(sh.get('slots', [])) + 1}",
+            p.subtitle.strip() or "ปัดลงเพื่อดูช่องย่อย 5 ช่อง"
+        )
+        sl["kind"] = "page"
+    else:
+        sl = ensure_slot({
+            "id": uid("slot"),
+            "title": p.title.strip() or "New Slot",
+            "subtitle": p.subtitle.strip() or "แตะใช้งาน / กด ⚙ ตั้งค่า",
+            "kind": kind,
+            "media_url": "",
+            "media_type": "",
+            "link_url": DEFAULT_LINKS.get(kind, ""),
+            "enabled": True,
+            "created_at": now(),
+            "updated_at": now(),
+        })
+
+    sh.setdefault("slots", []).append(sl)
+    sh["updated_at"] = now()
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.patch("/api/sheets/{sheet_id}/slots/{slot_id}")
+def api_patch_slot(sheet_id: str, slot_id: str, p: SlotPatch):
+    st = load_state()
+    sh = find_sheet(st, sheet_id)
+    sl = find_slot(sh, slot_id)
+
+    data = dump_model(p)
+    for k, v in data.items():
+        if k in ["title", "subtitle", "kind", "media_url", "media_type", "link_url", "enabled"]:
+            sl[k] = v
+
+    sl["updated_at"] = now()
+    sh["updated_at"] = now()
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.delete("/api/sheets/{sheet_id}/slots/{slot_id}")
+def api_delete_slot(sheet_id: str, slot_id: str):
+    st = load_state()
+    sh = find_sheet(st, sheet_id)
+
+    before = len(sh.get("slots", []))
+    sh["slots"] = [x for x in sh.get("slots", []) if x.get("id") != slot_id]
+
+    if len(sh["slots"]) == before:
+        raise HTTPException(404, "slot not found")
+
+    sh["updated_at"] = now()
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.post("/api/sheets/{sheet_id}/slots/{slot_id}/upload")
+def api_upload_slot(sheet_id: str, slot_id: str, file: UploadFile = File(...)):
+    st = load_state()
+    sh = find_sheet(st, sheet_id)
+    sl = find_slot(sh, slot_id)
+
+    url, mt = save_upload_file(file)
+    sl["media_url"] = url
+    sl["media_type"] = mt
+    sl["updated_at"] = now()
+    sh["updated_at"] = now()
+
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.patch("/api/sheets/{sheet_id}/slots/{slot_id}/children/{child_id}")
+def api_patch_child(sheet_id: str, slot_id: str, child_id: str, p: SlotPatch):
+    st = load_state()
+    sh = find_sheet(st, sheet_id)
+    sl = find_slot(sh, slot_id)
+    ch = find_child(sl, child_id)
+
+    data = dump_model(p)
+    for k, v in data.items():
+        if k in ["title", "subtitle", "kind", "media_url", "media_type", "link_url", "enabled"]:
+            ch[k] = v
+
+    ch["updated_at"] = now()
+    sl["updated_at"] = now()
+    sh["updated_at"] = now()
+
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.post("/api/sheets/{sheet_id}/slots/{slot_id}/children/{child_id}/upload")
+def api_upload_child(sheet_id: str, slot_id: str, child_id: str, file: UploadFile = File(...)):
+    st = load_state()
+    sh = find_sheet(st, sheet_id)
+    sl = find_slot(sh, slot_id)
+    ch = find_child(sl, child_id)
+
+    url, mt = save_upload_file(file)
+    ch["media_url"] = url
+    ch["media_type"] = mt
+    ch["updated_at"] = now()
+    sl["updated_at"] = now()
+    sh["updated_at"] = now()
+
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.post("/api/sheets/{sheet_id}/upload-pages")
+def api_upload_pages(sheet_id: str, files: List[UploadFile] = File(...)):
+    st = load_state()
+    sh = find_sheet(st, sheet_id)
+    sh.setdefault("slots", [])
+
+    for file in files:
+        url, mt = save_upload_file(file)
+        title = Path(file.filename or "หน้าใหม่").stem[:30] or f"หน้า {len(sh['slots']) + 1}"
+
+        empty = None
+        for sl in sh["slots"]:
+            if not sl.get("media_url") and str(sl.get("kind", "")) in ["page", "action"]:
+                empty = sl
+                break
+
+        if empty:
+            empty["title"] = title
+            empty["subtitle"] = "หน้านี้สร้างจากรูป/วิดีโอ"
+            empty["kind"] = "page"
+            empty["media_url"] = url
+            empty["media_type"] = mt
+            empty["children"] = empty.get("children") or default_children()
+            empty["updated_at"] = now()
+        else:
+            sh["slots"].append(new_page(title, "หน้านี้สร้างจากรูป/วิดีโอ", url, mt))
+
+    sh["updated_at"] = now()
+    save_state(st)
+    return JSONResponse(st)

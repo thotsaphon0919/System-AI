@@ -1,0 +1,36 @@
+{
+  "title": "INFINI Design System",
+  "design_system": {
+    "theme": "Luxury Cyberpunk",
+    "primary_color": "Purple",
+    "accent_color": "Orange",
+    "background": "Dark / Black",
+    "corner_radius": "24",
+    "glass_effect": "ON",
+    "shadow": "Soft Glow",
+    "spacing": "24",
+    "font": "Inter / Modern Sans"
+  },
+  "composition_rules": {
+    "header": "25%",
+    "content": "60%",
+    "bottom_nav": "15%",
+    "card_columns": "2",
+    "gap": "16",
+    "glow_level": "20%"
+  },
+  "visual_dna": {
+    "feeling": "premium, futuristic, self-managed digital space",
+    "luxury": "high",
+    "future": "high",
+    "line_weight": "thin neon line with strong border focus",
+    "card_style": "rounded dark glass card with neon glow",
+    "icon_style": "simple futuristic line icon",
+    "camera_angle": "front mobile UI / slight depth",
+    "lighting": "purple-blue neon with orange accent",
+    "texture": "glass, metal, digital glow",
+    "avoid": "messy, cheap, flat, unreadable, too many random colors"
+  },
+  "references": [],
+  "assets": []
+}

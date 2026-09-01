@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>INFINI ทำอะไรได้</title>
+<style>
+:root{
+  --bg:#02040b;--panel:#07101f;--panel2:#0b1730;
+  --line:rgba(88,199,255,.28);--cyan:#49d8ff;--purple:#9a62ff;
+  --text:#f7f8ff;--muted:#9eacc5;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100dvh;color:var(--text);
+  background:radial-gradient(circle at 80% 0,rgba(134,73,255,.22),transparent 32%),radial-gradient(circle at 0 25%,rgba(52,197,255,.14),transparent 30%),var(--bg);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+button,a{font:inherit}a{color:inherit;text-decoration:none}
+.topbar{
+  position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(2,4,11,.86);backdrop-filter:blur(18px)
+}
+.back{display:flex;align-items:center;gap:8px;color:#d9e7ff}.brand{font-weight:950;letter-spacing:2px}.infinity{color:var(--cyan);font-size:30px;text-shadow:0 0 18px var(--cyan)}
+.owner-badge{padding:7px 11px;border:1px solid var(--line);border-radius:999px;color:#bff4ff;font-size:11px}
+.shell{width:min(100%,1050px);margin:auto;padding:34px 16px 90px}.eyebrow{color:var(--cyan);font-weight:900;font-size:11px;letter-spacing:2px}
+h1{margin:9px 0 10px;font-size:clamp(34px,10vw,62px);line-height:1.02}.lead{max-width:760px;color:var(--muted);line-height:1.75;margin:0 0 25px}
+.notice{margin:0 0 22px;padding:13px 15px;border:1px solid rgba(73,216,255,.24);border-radius:16px;background:rgba(7,18,36,.72);color:#bad0ea;font-size:13px;line-height:1.55}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.case-card{position:relative;min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:23px;background:linear-gradient(150deg,var(--panel2),var(--panel));box-shadow:0 18px 50px rgba(0,0,0,.22);touch-action:pan-y}
+.case-preview{position:relative;width:100%;aspect-ratio:9/12;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 70% 20%,rgba(150,89,255,.25),transparent 35%),linear-gradient(145deg,#10234a,#050a14)}
+.case-preview img,.case-preview video{width:100%;height:100%;object-fit:cover;display:block}.placeholder{display:grid;place-items:center;text-align:center;color:#d8e7ff}.placeholder .icon{font-size:54px;filter:drop-shadow(0 0 20px rgba(73,216,255,.35))}.placeholder small{display:block;color:#8ea0be;margin-top:10px}
+.play{position:absolute;width:52px;height:52px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.7);border-radius:50%;background:rgba(0,0,0,.48);box-shadow:0 0 24px rgba(73,216,255,.25);pointer-events:none}.case-copy{padding:16px}.case-copy h2{font-size:17px;margin:0 0 7px}.case-copy p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+.manage-btn{position:absolute;top:9px;right:9px;z-index:5;padding:7px 10px;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:rgba(0,0,0,.7);color:#dff8ff;font-size:10px;font-weight:900}
+.modal{position:fixed;inset:0;z-index:1000;display:none;align-items:flex-end;justify-content:center;padding:0;background:rgba(0,0,0,.78)}.modal.open{display:flex}.sheet{width:min(100%,760px);max-height:92dvh;overflow:auto;border:1px solid var(--line);border-bottom:0;border-radius:27px 27px 0 0;background:#07111f;padding:18px 17px 28px;box-shadow:0 -24px 70px rgba(0,0,0,.6)}
+.sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}.sheet-head h2{margin:0;font-size:23px}.sheet-head p{margin:7px 0 0;color:var(--muted);font-size:13px;line-height:1.5}.close{flex:0 0 auto;width:42px;height:42px;border:1px solid var(--line);border-radius:14px;color:white;background:#10223a;font-size:21px}
+.player,.viewer-image{width:100%;max-height:58dvh;display:none;object-fit:contain;background:black;border-radius:18px;border:1px solid rgba(255,255,255,.14)}.empty-player{min-height:230px;display:grid;place-items:center;text-align:center;border:1px dashed rgba(73,216,255,.35);border-radius:18px;color:#8fa3c2}
+.actions{display:grid;gap:10px;margin-top:15px}.action{width:100%;min-height:52px;border:0;border-radius:15px;font-weight:900;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#02040b}.action.image{background:linear-gradient(135deg,#62f5c2,#49d8ff)}.action.secondary{background:#13253c;color:white;border:1px solid var(--line)}.action.danger{background:#263444;color:#ff9aaa}.action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.section-label{margin:17px 0 5px;color:#8da4c5;font-size:11px;font-weight:900;letter-spacing:1.2px}.status{min-height:20px;margin-top:11px;color:#a9f3ff;font-size:13px;text-align:center}.footer{text-align:center;color:#657590;padding:38px 0 0;font-size:11px;letter-spacing:1px}
+@media(min-width:760px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.case-preview{aspect-ratio:4/5}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="back" href="/service"><span>←</span><span>กลับหน้าแนะนำ</span></a>
+  <div class="brand"><span class="infinity">∞</span> INFINI</div>
+  {% if can_manage %}<div class="owner-badge">โหมดเจ้าของระบบ</div>{% endif %}
+</header>
+
+<main class="shell">
+  <div class="eyebrow">USE CASE LIBRARY</div>
+  <h1>INFINI ทำอะไรได้</h1>
+  <p class="lead">เลือกสายงานที่ใกล้กับคุณ แล้วดูภาพและวิดีโอตัวอย่างว่า INFINI SPACE สามารถนำไปใช้กับผลงาน สินค้า บริการ หรือโครงการได้อย่างไร</p>
+
+  {% if can_manage %}
+  <div class="notice">หน้านี้เป็นเนื้อหาส่วนกลางของ INFINI เฉพาะเจ้าของระบบเท่านั้นที่อัปโหลดภาพปกและวิดีโอได้ แตะปุ่ม “จัดการ” บนช่องที่ต้องการ</div>
+  {% endif %}
+
+  <section class="grid" id="caseGrid">
+    {% for item in items %}
+    <article class="case-card"
+      data-slug="{{ item.slug }}"
+      data-title="{{ item.title }}"
+      data-description="{{ item.description }}"
+      data-image-url="{{ item.image_url|default('', true) }}"
+      data-video-url="{{ item.video_url|default('', true) }}">
+      {% if can_manage %}<button class="manage-btn" type="button">จัดการ</button>{% endif %}
+      <div class="case-preview">
+        {% if item.image_url %}
+          <img src="{{ item.image_url }}" alt="{{ item.title }}">
+          {% if item.video_url %}<div class="play">▶</div>{% endif %}
+        {% elif item.video_url %}
+          <video muted playsinline preload="metadata"><source src="{{ item.video_url }}" type="{{ item.video_type|default('video/mp4', true) }}"></video>
+          <div class="play">▶</div>
+        {% else %}
+          <div class="placeholder"><div><div class="icon">{{ item.icon }}</div><small>รอระบบอัปโหลดภาพหรือวิดีโอ</small></div></div>
+        {% endif %}
+      </div>
+      <div class="case-copy"><h2>{{ item.title }}</h2><p>{{ item.description }}</p></div>
+    </article>
+    {% endfor %}
+  </section>
+  <div class="footer">INFINI · ONE SPACE · MANY WAYS TO USE IT</div>
+</main>
+
+<input id="imageInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+<input id="videoInput" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-m4v" hidden>
+
+<div class="modal" id="viewerModal"><div class="sheet">
+  <div class="sheet-head"><div><h2 id="viewerTitle"></h2><p id="viewerDescription"></p></div><button class="close" id="closeViewer" type="button">×</button></div>
+  <video class="player" id="viewerPlayer" controls playsinline></video>
+  <img class="viewer-image" id="viewerImage" alt="">
+  <div class="empty-player" id="viewerEmpty">ยังไม่มีภาพหรือวิดีโอในสายงานนี้</div>
+</div></div>
+
+{% if can_manage %}
+<div class="modal" id="adminModal"><div class="sheet">
+  <div class="sheet-head"><div><h2 id="adminTitle">จัดการสื่อ</h2><p>ภาพใช้เป็นหน้าปกของช่อง ส่วนวิดีโอเปิดเมื่อผู้ชมแตะช่อง</p></div><button class="close" id="closeAdmin" type="button">×</button></div>
+  <div class="section-label">ภาพปกสายงาน</div>
+  <div class="action-row"><button class="action image" id="chooseImage" type="button">อัปโหลด / เปลี่ยนรูป</button><button class="action danger" id="removeImage" type="button">ลบรูป</button></div>
+  <div class="section-label">วิดีโอตัวอย่าง</div>
+  <div class="action-row"><button class="action" id="chooseVideo" type="button">อัปโหลด / เปลี่ยนวิดีโอ</button><button class="action danger" id="removeVideo" type="button">ลบวิดีโอ</button></div>
+  <div class="actions"><button class="action secondary" id="cancelAdmin" type="button">ปิด</button></div>
+  <div class="status" id="uploadStatus"></div>
+</div></div>
+{% endif %}
+
+<script>
+(() => {
+  const canManage = {{ can_manage|tojson }};
+  const cards = [...document.querySelectorAll('.case-card')];
+  const viewerModal = document.getElementById('viewerModal');
+  const viewerPlayer = document.getElementById('viewerPlayer');
+  const viewerImage = document.getElementById('viewerImage');
+  const viewerEmpty = document.getElementById('viewerEmpty');
+  const viewerTitle = document.getElementById('viewerTitle');
+  const viewerDescription = document.getElementById('viewerDescription');
+  let activeCard = null;
+
+  function openViewer(card) {
+    const videoUrl = card.dataset.videoUrl || '';
+    const imageUrl = card.dataset.imageUrl || '';
+    viewerTitle.textContent = card.dataset.title || '';
+    viewerDescription.textContent = card.dataset.description || '';
+    viewerPlayer.pause();viewerPlayer.removeAttribute('src');viewerPlayer.load();viewerPlayer.style.display='none';
+    viewerImage.removeAttribute('src');viewerImage.style.display='none';viewerEmpty.style.display='none';
+    if (videoUrl) {
+      viewerPlayer.src = videoUrl;viewerPlayer.style.display='block';viewerPlayer.play().catch(() => {});
+    } else if (imageUrl) {
+      viewerImage.src = imageUrl;viewerImage.alt = card.dataset.title || '';viewerImage.style.display='block';
+    } else {
+      viewerEmpty.style.display='grid';
+    }
+    viewerModal.classList.add('open');
+  }
+  function closeViewer(){viewerPlayer.pause();viewerModal.classList.remove('open')}
+  document.getElementById('closeViewer').addEventListener('click',closeViewer);
+  viewerModal.addEventListener('click',e=>{if(e.target===viewerModal)closeViewer()});
+
+  if (canManage) {
+    const adminModal=document.getElementById('adminModal');
+    const imageInput=document.getElementById('imageInput');
+    const videoInput=document.getElementById('videoInput');
+    const status=document.getElementById('uploadStatus');
+    function openAdmin(card){activeCard=card;document.getElementById('adminTitle').textContent='จัดการสื่อ: '+(card.dataset.title||'สายงาน');status.textContent='';adminModal.classList.add('open')}
+    function closeAdmin(){adminModal.classList.remove('open')}
+    document.getElementById('closeAdmin').addEventListener('click',closeAdmin);
+    document.getElementById('cancelAdmin').addEventListener('click',closeAdmin);
+    adminModal.addEventListener('click',e=>{if(e.target===adminModal)closeAdmin()});
+
+    async function upload(kind,file,maxMb){
+      if(!file||!activeCard)return;
+      if(file.size>maxMb*1024*1024){status.textContent=`ไฟล์ใหญ่เกิน ${maxMb} MB`;return}
+      status.textContent=kind==='image'?'กำลังอัปโหลดรูป...':'กำลังอัปโหลดวิดีโอ...';
+      const form=new FormData();form.append('file',file);
+      try{
+        const response=await fetch('/api/use-cases/'+encodeURIComponent(activeCard.dataset.slug)+'/'+kind,{method:'POST',body:form});
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok)throw new Error(result.detail||'อัปโหลดไม่สำเร็จ');
+        status.textContent='อัปโหลดสำเร็จ กำลังรีเฟรชหน้า...';setTimeout(()=>location.reload(),450);
+      }catch(error){status.textContent=error.message||'อัปโหลดไม่สำเร็จ'}
+    }
+    async function remove(kind){
+      if(!activeCard)return;
+      const current=kind==='image'?activeCard.dataset.imageUrl:activeCard.dataset.videoUrl;
+      if(!current){status.textContent=kind==='image'?'ช่องนี้ยังไม่มีรูป':'ช่องนี้ยังไม่มีวิดีโอ';return}
+      if(!confirm(kind==='image'?'ลบรูปปกของสายงานนี้ใช่ไหม':'ลบวิดีโอของสายงานนี้ใช่ไหม'))return;
+      status.textContent='กำลังลบ...';
+      try{
+        const response=await fetch('/api/use-cases/'+encodeURIComponent(activeCard.dataset.slug)+'/'+kind,{method:'DELETE'});
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok)throw new Error(result.detail||'ลบไม่สำเร็จ');
+        status.textContent='ลบแล้ว กำลังรีเฟรชหน้า...';setTimeout(()=>location.reload(),400);
+      }catch(error){status.textContent=error.message||'ลบไม่สำเร็จ'}
+    }
+
+    document.getElementById('chooseImage').addEventListener('click',()=>{imageInput.value='';imageInput.click()});
+    imageInput.addEventListener('change',()=>upload('image',imageInput.files?.[0],15));
+    document.getElementById('removeImage').addEventListener('click',()=>remove('image'));
+    document.getElementById('chooseVideo').addEventListener('click',()=>{videoInput.value='';videoInput.click()});
+    videoInput.addEventListener('change',()=>upload('video',videoInput.files?.[0],250));
+    document.getElementById('removeVideo').addEventListener('click',()=>remove('video'));
+
+    cards.forEach(card=>{
+      card.querySelector('.manage-btn')?.addEventListener('click',e=>{e.stopPropagation();openAdmin(card)});
+      let timer=null,startX=0,startY=0,longPressed=false;
+      card.addEventListener('pointerdown',e=>{if(e.target.closest('.manage-btn'))return;startX=e.clientX;startY=e.clientY;longPressed=false;timer=setTimeout(()=>{timer=null;longPressed=true;navigator.vibrate?.(35);openAdmin(card)},650)});
+      card.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-startX)>12||Math.abs(e.clientY-startY)>12){clearTimeout(timer);timer=null}});
+      ['pointerup','pointercancel','pointerleave'].forEach(name=>card.addEventListener(name,()=>{clearTimeout(timer);timer=null}));
+      card.addEventListener('click',e=>{if(e.target.closest('.manage-btn'))return;if(longPressed){e.preventDefault();longPressed=false;return}openViewer(card)});
+    });
+  } else {
+    cards.forEach(card=>card.addEventListener('click',()=>openViewer(card)));
+  }
+})();
+</script>
+</body>
+</html>

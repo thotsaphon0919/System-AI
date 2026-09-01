@@ -1,0 +1,501 @@
+  render();
+}
+
+async function uploadTarget(){
+  const file=$("fFile").files[0];
+  if(!file){toast("เลือกรูปหรือวิดีโอก่อน");return}
+  const fd=new FormData();
+  fd.append("file",file);
+  const url=selected.type==="item"
+    ? `/api/pages/${selected.pageId}/items/${selected.itemId}/upload`
+    : `/api/pages/${selected.pageId}/upload`;
+  const res=await fetch(url,{method:"POST",body:fd});
+  if(!res.ok){toast("อัปโหลดไม่สำเร็จ");return}
+  state=await res.json();
+  toast("อัปโหลดแล้ว");
+  render();
+}
+
+async function clearTarget(){
+  const body={media_url:"",media_type:""};
+  if(selected.type==="item"){
+    state=await api(`/api/pages/${selected.pageId}/items/${selected.itemId}`,{method:"PATCH",body:JSON.stringify(body)});
+  }else{
+    state=await api(`/api/pages/${selected.pageId}`,{method:"PATCH",body:JSON.stringify(body)});
+  }
+  toast("ล้างสื่อแล้ว");
+  render();
+}
+
+async function deleteTarget(){
+  if(selected.type==="item"){
+    state=await api(`/api/pages/${selected.pageId}/items/${selected.itemId}`,{
+      method:"PATCH",
+      body:JSON.stringify({title:"",subtitle:"",detail:"",media_url:"",media_type:"",link_url:"",enabled:true})
+    });
+    toast("รีเซ็ตของย่อยแล้ว");
+    render();
+    return;
+  }
+  if(!confirm("ลบหน้าโชว์นี้ใช่ไหม"))return;
+  state=await api(`/api/pages/${selected.pageId}`,{method:"DELETE"});
+  closeDrawer();
+  toast("ลบแล้ว");
+  if(showId)location.href="/";
+  else render();
+}
+
+function useItem(pid,iid){
+  const it=getItem(pid,iid);
+  if(it.enabled===false){toast("ช่องนี้ปิดอยู่");return}
+  if(it.link_url){location.href=it.link_url;return}
+  if(it.media_url){openViewer(it);return}
+  openItemGear(pid,iid);
+}
+
+async function addPage(){
+  if(showId){location.href="/";return}
+  const title="";
+  
+  state=await api("/api/pages",{method:"POST",body:JSON.stringify({title,subtitle:"หน้าโชว์ของย่อย"})});
+  toast("เพิ่มหน้าโชว์แล้ว");
+  render();
+}
+
+function uploadPagesClick(){
+  $("pageFiles").click();
+}
+
+async function uploadPages(files){
+  if(!files.length)return;
+  const fd=new FormData();
+  [...files].forEach(f=>fd.append("files",f));
+  const res=await fetch("/api/pages/upload-many",{method:"POST",body:fd});
+  if(!res.ok){toast("สร้างหน้าไม่สำเร็จ");return}
+  state=await res.json();
+  toast("สร้างรูป/วิดีโอเป็นหน้าแล้ว");
+  if(showId)location.href="/";
+  else render();
+}
+
+function backOrLink(){
+  if(!showId){toast("ตอนนี้ทุกช่องเป็นหน้าโชว์แล้ว");return}
+  const pg=page();
+  if(pg.link_url)location.href=pg.link_url;
+  else openPageGear(pg.id);
+}
+
+function openViewer(obj){
+  const b=$("viewerBody");
+  b.innerHTML=obj.media_type==="video"
+    ? `<video src="${obj.media_url}" controls autoplay playsinline></video>`
+    : `<img src="${obj.media_url}">`;
+  $("viewer").classList.add("show");
+}
+
+function closeViewer(){
+  $("viewer").classList.remove("show");
+}
+
+$("addPageBtn").addEventListener("click",addPage);
+$("uploadPagesBtn").addEventListener("click",uploadPagesClick);
+$("backBtn").addEventListener("click",backOrLink);
+$("pageFiles").addEventListener("change",e=>uploadPages(e.target.files));
+$("back").addEventListener("click",closeDrawer);
+$("closeBtn").addEventListener("click",closeDrawer);
+$("saveBtn").addEventListener("click",saveTarget);
+$("uploadBtn").addEventListener("click",uploadTarget);
+$("clearBtn").addEventListener("click",clearTarget);
+$("deleteBtn").addEventListener("click",deleteTarget);
+$("closeViewerBtn").addEventListener("click",closeViewer);
+$("viewer").addEventListener("click",e=>{if(e.target.id==="viewer")closeViewer()});
+$("shareBtn").addEventListener("click",async()=>{
+  try{await navigator.clipboard.writeText(location.href);toast("คัดลอกลิงก์แล้ว")}
+  catch(e){prompt("Copy link",location.href)}
+});
+
+load().catch(e=>{console.error(e);toast("โหลดผิดพลาด")});
+</script>
+
+<script>
+/* STOP PHOTO POPUP ON MAIN CARDS */
+document.addEventListener("click", async function(e){
+  const el = e.target;
+
+  /* ถ้ากด input file จริง ๆ ปล่อย */
+  if (el && el.tagName === "INPUT") return;
+
+  /* ถ้ากดเฟือง ให้ไม่เปิด Google Photos */
+  const gear = el.closest(".gear");
+  if (gear) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const card = gear.closest(".card,.slot,.pageCard,.tile");
+    if (card) {
+      card.dispatchEvent(new CustomEvent("open-settings", {bubbles:true}));
+    }
+    return false;
+  }
+
+  /* กดที่รูป/ช่องหลัก ให้ไปห้องแสดงผลงาน */
+  const card = el.closest(".card,.slot,.pageCard,.tile");
+  if (card) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    let id = card.dataset.id || card.getAttribute("data-id");
+
+    if (!id) {
+      try {
+        const st = await fetch("/api/state").then(r=>r.json());
+        const cards = Array.from(document.querySelectorAll(".card,.slot,.pageCard,.tile"));
+        const idx = cards.indexOf(card);
+        id = st.pages?.[idx]?.id;
+      } catch(err) {}
+    }
+
+    if (id) location.href = "/room/" + id;
+    return false;
+  }
+}, true);
+</script>
+
+
+<script>
+/* FORCE HOME CARD CLICK:
+   หน้าแรกเท่านั้น
+   - กดรูป/การ์ด = เข้า /room/...
+   - กดเฟือง = ปล่อยให้เฟืองทำงานเดิม
+*/
+(function(){
+  if(location.pathname !== "/") return;
+
+  async function getPages(){
+    try{
+      const r = await fetch("/api/state");
+      const st = await r.json();
+      return st.pages || [];
+    }catch(e){
+      return [];
+    }
+  }
+
+  function isGear(el){
+    return el.closest(".gear,button.gear,[id*='gear'],[class*='gear']");
+  }
+
+  getPages().then(function(pages){
+    setTimeout(function(){
+      const cards = Array.from(document.querySelectorAll(".card,.slot,.page,.pageCard,.tile"))
+        .filter(el => !el.closest(".drawer") && el.offsetWidth > 80 && el.offsetHeight > 80);
+
+      cards.forEach(function(card, idx){
+        const pg = pages[idx];
+        if(!pg || !pg.id) return;
+
+        card.addEventListener("click", function(e){
+          if(isGear(e.target)) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+
+          location.href = pg.link_url || ("/room/" + pg.id);
+        }, true);
+      });
+    }, 600);
+  });
+})();
+</script>
+
+
+<script>
+/* CREATIVE ROOM FINAL PATCH
+   1) ด้านบน = CREATIVE ROOM + ช่องอัปโหลดรูป/วิดีโอ
+   2) ช่องเล็ก: กดเฟือง = เปลี่ยนรูป/วิดีโอ, กดช่อง = เข้า /room/{id}
+*/
+(function(){
+  if(location.pathname !== "/") return;
+  if(window.__CREATIVE_ROOM_FINAL_PATCH__) return;
+  window.__CREATIVE_ROOM_FINAL_PATCH__ = true;
+
+  function toast(msg){
+    let t = document.getElementById("__crToast");
+    if(!t){
+      t = document.createElement("div");
+      t.id = "__crToast";
+      t.style.cssText = "position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:999999;background:#160800;color:white;border:1px solid rgba(255,174,25,.65);border-radius:999px;padding:10px 14px;font:14px system-ui;font-weight:800;display:none";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.display = "block";
+    setTimeout(()=>t.style.display="none",1400);
+  }
+
+  async function api(url,opt={}){
+    const res = await fetch(url,{headers:{"Content-Type":"application/json",...(opt.headers||{})},...opt});
+    if(!res.ok) throw new Error(await res.text());
+    return await res.json();
+  }
+
+  function addCSS(){
+    if(document.getElementById("__crCSS")) return;
+    const st = document.createElement("style");
+    st.id = "__crCSS";
+    st.textContent = `
+      #crTop{
+        margin:18px 16px 18px;
+        padding:18px;
+        background:#050505;
+        border-radius:0;
+        color:white;
+        border:1px solid rgba(255,174,25,.18);
+      }
+      #crTop h1{
+        margin:0 0 18px;
+        font-size:46px;
+        line-height:.95;
+        letter-spacing:.02em;
+        font-weight:1000;
+        color:white;
+      }
+      .crMediaBox{
+        position:relative;
+        width:100%;
+        aspect-ratio:2/3;
+        background:#120900;
+        overflow:hidden;
+        border-radius:8px;
+        border:1px solid rgba(255,174,25,.25);
+      }
+      .crMediaBox img,.crMediaBox video{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        display:block;
+        background:#120900;
+      }
+      .crEmpty{
+        position:absolute;
+        inset:0;
+        display:grid;
+        place-items:center;
+        font-size:76px;
+        font-weight:1000;
+        color:rgba(255,174,25,.25);
+      }
+      .crTopGear,.crTopUpload{
+        position:absolute;
+        z-index:10;
+        border:1px solid rgba(255,174,25,.7);
+        background:rgba(0,0,0,.62);
+        color:#ffad18;
+        font-weight:1000;
+      }
+      .crTopGear{
+        top:12px;
+        right:12px;
+        width:54px;
+        height:54px;
+        border-radius:999px;
+        font-size:27px;
+      }
+      .crTopUpload{
+        right:12px;
+        bottom:12px;
+        border-radius:999px;
+        padding:10px 15px;
+        color:white;
+        font-size:16px;
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  function mediaHtml(st){
+    const url = st.media_url || "";
+    const type = st.media_type || "";
+    if(!url) return '<div class="crEmpty">+</div>';
+    if(type === "video" || url.toLowerCase().match(/\.(mp4|webm|mov)$/)){
+      return `<video src="${url}" controls playsinline preload="metadata"></video>`;
+    }
+    return `<img src="${url}">`;
+  }
+
+  async function uploadTop(){
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "image/*,video/*";
+    inp.style.display = "none";
+    document.body.appendChild(inp);
+
+    inp.onchange = async ()=>{
+      const f = inp.files && inp.files[0];
+      if(!f) return;
+      const fd = new FormData();
+      fd.append("file",f);
+
+      toast("กำลังอัปโหลด...");
+      const res = await fetch("/api/creative/top/upload",{method:"POST",body:fd});
+      if(!res.ok){
+        toast("อัปโหลดไม่สำเร็จ");
+        return;
+      }
+      toast("อัปโหลดแล้ว");
+      setTimeout(()=>location.reload(),500);
+    };
+    inp.click();
+  }
+
+  async function buildTop(){
+    addCSS();
+    if(document.getElementById("crTop")) return;
+
+    const st = await api("/api/creative/top");
+
+    const grid =
+      document.querySelector(".grid") ||
+      document.querySelector(".cards") ||
+      document.querySelector("main") ||
+      document.body.firstElementChild;
+
+    const box = document.createElement("div");
+    box.id = "crTop";
+    box.innerHTML = `
+      <h1>CREATIVE ROOM</h1>
+      <div class="crMediaBox">
+        ${mediaHtml(st)}
+        <button class="crTopGear">⚙</button>
+        <button class="crTopUpload">เปลี่ยนสื่อ</button>
+      </div>
+    `;
+
+    if(grid && grid.parentNode){
+      grid.parentNode.insertBefore(box, grid);
+    }else{
+      document.body.insertBefore(box, document.body.firstChild);
+    }
+
+    box.querySelector(".crTopGear").addEventListener("click",e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      uploadTop();
+    });
+
+    box.querySelector(".crTopUpload").addEventListener("click",e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      uploadTop();
+    });
+  }
+
+  function findCards(){
+    const gears = Array.from(document.querySelectorAll(".gear,button.gear,[class*='gear']"))
+      .filter(g => !g.closest("#crTop") && !g.closest(".drawer") && !g.closest("[id^='__']"));
+
+    const cards = [];
+    gears.forEach(g=>{
+      let el = g.parentElement;
+      while(el && el !== document.body){
+        const r = el.getBoundingClientRect();
+        if(r.width > 90 && r.height > 90){
+          if(!cards.includes(el)) cards.push(el);
+          break;
+        }
+        el = el.parentElement;
+      }
+    });
+    return cards;
+  }
+
+  function uploadCard(pg){
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "image/*,video/*";
+    inp.style.display = "none";
+    document.body.appendChild(inp);
+
+    inp.onchange = async ()=>{
+      const f = inp.files && inp.files[0];
+      if(!f) return;
+      const fd = new FormData();
+      fd.append("file",f);
+
+      toast("กำลังอัปโหลด...");
+      const res = await fetch("/api/pages/" + pg.id + "/upload",{method:"POST",body:fd});
+      if(!res.ok){
+        toast("อัปโหลดไม่สำเร็จ");
+        return;
+      }
+      toast("เปลี่ยนสื่อช่องแล้ว");
+      setTimeout(()=>location.reload(),500);
+    };
+    inp.click();
+  }
+
+  async function bindCards(){
+    const st = await api("/api/state");
+    const pages = st.pages || [];
+
+    setTimeout(()=>{
+      const cards = findCards();
+
+      cards.forEach((card,idx)=>{
+        const pg = pages[idx];
+        if(!pg || !pg.id) return;
+
+        const gear = card.querySelector(".gear,button.gear,[class*='gear']");
+        if(gear){
+          gear.addEventListener("click",e=>{
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            uploadCard(pg);
+            return false;
+          },true);
+        }
+
+        card.addEventListener("click",e=>{
+          if(e.target.closest(".gear,button.gear,[class*='gear']")) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          location.href = "/room/" + pg.id;
+          return false;
+        },true);
+      });
+    },700);
+  }
+
+  buildTop().catch(e=>{console.error(e);toast("โหลด CREATIVE ROOM ไม่สำเร็จ")});
+  bindCards().catch(e=>{console.error(e);toast("ผูกช่องเล็กไม่สำเร็จ")});
+})();
+</script>
+
+
+<script>
+/* FINAL CLICK FIX
+   - ซ่อนปุ่มเปลี่ยนสื่อ
+   - เฟือง CREATIVE ROOM = เข้า /room ของช่องแรก
+   - เฟืองช่องเล็ก = อัปโหลดรูป/วิดีโอของช่องนั้น
+   - กดช่องเล็ก = เข้า /room/{id}
+*/
+(function(){
+  if(location.pathname !== "/") return;
+  if(window.__FINAL_CLICK_FIX__) return;
+  window.__FINAL_CLICK_FIX__ = true;
+
+  function toast(msg){
+    let t = document.getElementById("__finalToast");
+    if(!t){
+      t = document.createElement("div");
+      t.id = "__finalToast";
+      t.style.cssText = "position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:999999;background:#160800;color:white;border:1px solid rgba(255,174,25,.7);border-radius:999px;padding:10px 14px;font:14px system-ui;font-weight:800;display:none";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.display = "block";
+    setTimeout(()=>t.style.display="none",1400);
+  }
+
+  async function getPages(){

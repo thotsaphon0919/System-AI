@@ -1,0 +1,58 @@
+{
+  "collector": {
+    "video_url": "/uploads/use_cases/collector-video-d9c8e97ac4d3448a.mp4",
+    "video_name": "8592.mp4",
+    "video_type": "video/mp4",
+    "video_size": 2403074,
+    "video_updated_at": "2026-08-06T07:31:13.525771+00:00"
+  },
+  "home-office": {
+    "video_url": "/uploads/use_cases/home-office-video-09588fed00694441.mp4",
+    "video_name": "4856.mp4",
+    "video_type": "video/mp4",
+    "video_size": 2715019,
+    "video_updated_at": "2026-08-06T07:33:53.826752+00:00"
+  },
+  "community": {
+    "video_url": "/uploads/use_cases/community-video-302acc6a08254e51.mp4",
+    "video_name": "4855.mp4",
+    "video_type": "video/mp4",
+    "video_size": 2709876,
+    "video_updated_at": "2026-08-06T07:32:37.106812+00:00"
+  },
+  "investor": {
+    "video_url": "/uploads/use_cases/investor-video-62a4d69ed92f46e9.mp4",
+    "video_name": "4938.mp4",
+    "video_type": "video/mp4",
+    "video_size": 2414619,
+    "video_updated_at": "2026-08-06T07:33:39.722535+00:00"
+  },
+  "shop": {
+    "video_url": "/uploads/use_cases/shop-video-ba0f762c80a848f9.mp4",
+    "video_name": "4369.mp4",
+    "video_type": "video/mp4",
+    "video_size": 1528834,
+    "video_updated_at": "2026-08-06T07:36:21.585103+00:00"
+  },
+  "portfolio": {
+    "video_url": "/uploads/use_cases/portfolio-video-b2bd420680914274.mp4",
+    "video_name": "4924.mp4",
+    "video_type": "video/mp4",
+    "video_size": 2626753,
+    "video_updated_at": "2026-08-06T07:35:41.374512+00:00"
+  },
+  "fashion": {
+    "video_url": "/uploads/use_cases/fashion-video-443968d672e2490a.mp4",
+    "video_name": "4368.mp4",
+    "video_type": "video/mp4",
+    "video_size": 1446121,
+    "video_updated_at": "2026-08-06T07:37:28.609598+00:00"
+  },
+  "creator": {
+    "video_url": "/uploads/use_cases/creator-video-f4ac518d9eeb4669.mp4",
+    "video_name": "8591.mp4",
+    "video_type": "video/mp4",
+    "video_size": 2928860,
+    "video_updated_at": "2026-08-06T07:38:35.928759+00:00"
+  }
+}

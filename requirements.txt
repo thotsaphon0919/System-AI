@@ -1,0 +1,25 @@
+# --- shared web framework (used by 7000, 8046, 8032) ---
+# Pinned to the exact versions this code was tested against end-to-end.
+# (An earlier unpinned "starlette" here silently resolved to a newer major
+# version whose TemplateResponse() signature changed and broke every page
+# that uses templates.TemplateResponse(name, context) — see 8032/main.py.)
+fastapi==0.141.1
+uvicorn[standard]==0.51.0
+python-multipart==0.0.32
+starlette==1.6.0
+pydantic==2.13.4
+itsdangerous==2.2.0
+Jinja2==3.1.6
+
+# --- 7000 / 8046 image handling ---
+Pillow
+
+# --- 8046 QR card generation ---
+qrcode
+
+# --- reverse proxy (proxy.py / start.py) ---
+httpx
+
+# --- persistence layer (storage.py) ---
+psycopg2-binary
+cloudinary

@@ -1,0 +1,385 @@
+from fastapi.responses import HTMLResponse
+
+def latest_gold_grid_html():
+    return HTMLResponse(r"""
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REMOTE PRO</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{
+  margin:0;
+  min-height:100%;
+  background:#000;
+  color:#fff;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+body{
+  background:
+    radial-gradient(circle at top,#2b1200 0%,#090300 42%,#000 100%);
+}
+.page{
+  width:100%;
+  max-width:430px;
+  margin:0 auto;
+  padding:22px 16px 118px;
+}
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:18px;
+}
+.logo{
+  width:58px;
+  height:58px;
+  border-radius:18px;
+  background:linear-gradient(180deg,#ffc13a,#ff9700);
+  color:#120800;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:34px;
+  font-weight:900;
+}
+.share{
+  border:1.5px solid rgba(255,151,25,.45);
+  border-radius:18px;
+  background:rgba(0,0,0,.45);
+  color:#fff;
+  padding:16px 22px;
+  font-size:20px;
+  font-weight:800;
+}
+
+/* ===== ส่วนอัปโหลดรูปข้างบน ===== */
+.cover{
+  position:relative;
+  height:155px;
+  border-radius:30px;
+  border:1.5px solid rgba(255,151,25,.55);
+  background:
+    linear-gradient(180deg,rgba(85,45,0,.62),rgba(0,0,0,.92));
+  box-shadow:0 0 18px rgba(255,145,0,.14);
+  overflow:hidden;
+  margin-bottom:18px;
+}
+.cover .coverTitle{
+  position:absolute;
+  left:18px;
+  top:16px;
+  z-index:3;
+}
+.cover .coverTitle b{
+  display:block;
+  font-size:22px;
+}
+.cover .coverTitle span{
+  display:block;
+  color:#ffd08a;
+  font-size:13px;
+  margin-top:4px;
+}
+.cover .bigPlus{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:70px;
+  color:rgba(255,151,0,.32);
+  z-index:2;
+}
+.cover .gear{
+  position:absolute;
+  right:16px;
+  top:16px;
+  z-index:4;
+}
+.coverMedia{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:1;
+}
+.cover.has-media .bigPlus,
+.cover.has-media .coverTitle{opacity:0}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px 14px;
+}
+.slot{
+  position:relative;
+  height:170px;
+  border-radius:27px;
+  overflow:hidden;
+  border:1.4px solid rgba(255,151,25,.38);
+  background:
+    linear-gradient(180deg,rgba(83,43,0,.56) 0%,rgba(13,9,4,.55) 42%,#000 100%);
+}
+.plus{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:58px;
+  font-weight:300;
+  color:rgba(255,151,0,.25);
+  z-index:2;
+}
+.gear{
+  width:43px;
+  height:43px;
+  border-radius:50%;
+  border:1.4px solid rgba(255,164,28,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#ffb11b;
+  font-size:25px;
+  background:rgba(0,0,0,.48);
+}
+.slot .gear{
+  position:absolute;
+  top:16px;
+  right:16px;
+  z-index:4;
+}
+.media{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:1;
+}
+.slot.has-media .plus{opacity:0}
+
+.dock-wrap{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:8px;
+  z-index:50;
+}
+.dock{
+  width:calc(100% - 28px);
+  max-width:430px;
+  margin:0 auto;
+  border-radius:28px;
+  border:1.5px solid rgba(255,151,25,.4);
+  background:rgba(2,1,0,.92);
+  padding:12px 16px;
+  box-shadow:0 0 18px rgba(255,145,0,.18);
+}
+.addBig{
+  width:100%;
+  height:72px;
+  border:0;
+  border-radius:24px;
+  background:linear-gradient(180deg,#ffc13a,#ff9700);
+  color:#120900;
+  font-size:46px;
+  font-weight:900;
+}
+.hint{
+  position:fixed;
+  left:50%;
+  bottom:98px;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,.85);
+  border:1px solid rgba(255,161,24,.55);
+  color:#ffd08a;
+  padding:10px 14px;
+  border-radius:999px;
+  font-size:13px;
+  opacity:0;
+  pointer-events:none;
+  transition:.25s;
+  z-index:80;
+}
+.hint.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div class="logo">∞</div>
+    <button class="share" onclick="sharePage()">แชร์</button>
+  </div>
+
+  <section class="cover" id="cover">
+    <div class="coverTitle">
+      <b>อัปโหลดรูปด้านบน</b>
+      <span>กดค้าง หรือกดเฟือง เพื่อใส่รูป/วิดีโอ</span>
+    </div>
+    <div class="bigPlus">+</div>
+    <button class="gear" onclick="openCoverPick(event)">⚙</button>
+  </section>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="dock-wrap">
+  <div class="dock">
+    <button class="addBig" onclick="addSlot()">+</button>
+  </div>
+</div>
+
+<div class="hint" id="hint"></div>
+<input id="filePick" type="file" accept="image/*,video/*" hidden>
+
+<script>
+let slotCount = Number(localStorage.getItem("remote_gold_slot_count") || 10);
+let currentSlot = 0;
+let target = "slot";
+
+const grid = document.getElementById("grid");
+const input = document.getElementById("filePick");
+const hint = document.getElementById("hint");
+const cover = document.getElementById("cover");
+
+function showHint(t){
+  hint.textContent = t;
+  hint.classList.add("show");
+  setTimeout(()=>hint.classList.remove("show"),1800);
+}
+function key(i){ return "remote_gold_slot_" + i; }
+
+function renderCover(){
+  const old = cover.querySelector(".coverMedia");
+  if(old) old.remove();
+
+  const saved = localStorage.getItem("remote_top_upload");
+  cover.classList.toggle("has-media", !!saved);
+
+  if(saved){
+    if(saved.startsWith("data:video")){
+      cover.insertAdjacentHTML("afterbegin", `<video class="coverMedia" src="${saved}" autoplay muted loop playsinline></video>`);
+    }else{
+      cover.insertAdjacentHTML("afterbegin", `<img class="coverMedia" src="${saved}">`);
+    }
+  }
+}
+
+function render(){
+  renderCover();
+  grid.innerHTML = "";
+
+  for(let i=0;i<slotCount;i++){
+    const card = document.createElement("div");
+    card.className = "slot";
+
+    const saved = localStorage.getItem(key(i));
+    if(saved){
+      card.classList.add("has-media");
+      if(saved.startsWith("data:video")){
+        card.innerHTML += `<video class="media" src="${saved}" autoplay muted loop playsinline></video>`;
+      }else{
+        card.innerHTML += `<img class="media" src="${saved}">`;
+      }
+    }
+
+    card.innerHTML += `
+      <div class="plus">+</div>
+      <button class="gear" type="button">⚙</button>
+    `;
+
+    let timer = null;
+    card.addEventListener("touchstart",()=>{ timer=setTimeout(()=>openSlotPick(i),520); },{passive:true});
+    card.addEventListener("touchend",()=>clearTimeout(timer));
+    card.addEventListener("mousedown",()=>{ timer=setTimeout(()=>openSlotPick(i),520); });
+    card.addEventListener("mouseup",()=>clearTimeout(timer));
+
+    card.querySelector(".gear").onclick = (e)=>{ e.stopPropagation(); openSlotPick(i); };
+    card.querySelector(".plus").onclick = (e)=>{ e.stopPropagation(); openSlotPick(i); };
+
+    grid.appendChild(card);
+  }
+}
+
+let coverTimer = null;
+cover.addEventListener("touchstart",()=>{ coverTimer=setTimeout(()=>openCoverPick(),520); },{passive:true});
+cover.addEventListener("touchend",()=>clearTimeout(coverTimer));
+cover.addEventListener("mousedown",()=>{ coverTimer=setTimeout(()=>openCoverPick(),520); });
+cover.addEventListener("mouseup",()=>clearTimeout(coverTimer));
+
+function openCoverPick(e){
+  if(e) e.stopPropagation();
+  target = "cover";
+  input.value = "";
+  input.click();
+}
+
+function openSlotPick(i){
+  target = "slot";
+  currentSlot = i;
+  input.value = "";
+  input.click();
+}
+
+input.onchange = () => {
+  const file = input.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    if(target === "cover"){
+      localStorage.setItem("remote_top_upload", e.target.result);
+      showHint("เพิ่มรูปด้านบนแล้ว");
+    }else{
+      localStorage.setItem(key(currentSlot), e.target.result);
+      showHint("ใส่รูป/วิดีโอในช่องแล้ว");
+    }
+    render();
+  };
+  reader.readAsDataURL(file);
+};
+
+function addSlot(){
+  slotCount += 2;
+  localStorage.setItem("remote_gold_slot_count", slotCount);
+  render();
+  showHint("เพิ่มช่องใหม่แล้ว");
+  setTimeout(()=>window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}),100);
+}
+
+function sharePage(){
+  const url = location.href;
+  navigator.clipboard?.writeText(url);
+  showHint("คัดลอกลิงก์แล้ว");
+}
+
+render();
+showHint("เพิ่มช่องอัปโหลดด้านบนแล้ว");
+</script>
+</body>
+</html>
+""")
+
+def install_latest_gold_grid(app):
+    remove_paths = {"/", "/lo", "/lin"}
+    app.router.routes[:] = [
+        r for r in app.router.routes
+        if getattr(r, "path", None) not in remove_paths
+    ]
+
+    @app.get("/", response_class=HTMLResponse)
+    async def latest_root_page():
+        return latest_gold_grid_html()
+
+    @app.get("/lo", response_class=HTMLResponse)
+    async def latest_lo_page():
+        return latest_gold_grid_html()
+
+    @app.get("/lin", response_class=HTMLResponse)
+    async def latest_lin_page():
+        return latest_gold_grid_html()

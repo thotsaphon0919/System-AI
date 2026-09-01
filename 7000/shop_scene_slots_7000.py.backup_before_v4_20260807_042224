@@ -1,0 +1,307 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+import base64
+import json
+import time
+import uuid
+
+from fastapi import Request
+from fastapi.responses import HTMLResponse, JSONResponse
+
+MODULE_NAME = "INFINI_SHOP_SCENE_SLOTS_7000_V1"
+BASE = Path(__file__).resolve().parent
+LIB_DIR = BASE / "data" / "infini_library_scene_builder"
+LIB_UPLOADS = LIB_DIR / "uploads"
+LIB_DB = LIB_DIR / "library.json"
+LIB_UPLOADS.mkdir(parents=True, exist_ok=True)
+
+def _load_library() -> dict[str, Any]:
+    try:
+        if LIB_DB.exists():
+            data = json.loads(LIB_DB.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and isinstance(data.get("items"), list):
+                return data
+    except Exception:
+        pass
+    return {"items": []}
+
+def _save_library(data: dict[str, Any]) -> None:
+    LIB_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = LIB_DB.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(LIB_DB)
+
+def _decode_png(data_url: str) -> bytes:
+    if not isinstance(data_url, str) or not data_url:
+        raise ValueError("missing image data")
+    payload = data_url.split(",", 1)[1] if "," in data_url else data_url
+    raw = base64.b64decode(payload, validate=False)
+    if not raw:
+        raise ValueError("empty image")
+    if len(raw) > 30 * 1024 * 1024:
+        raise ValueError("image too large")
+    return raw
+
+def _html(items: list[dict[str, Any]]) -> str:
+    items_json = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
+    page = r'''<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>INFINI Shop Scene Slots</title>
+<style>
+:root{--bg:#070302;--panel:#0d0805;--line:#6a3518;--orange:#ff961e;--gold:#ffc35b;--text:#fff8ef;--muted:#bda38f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(circle at top,#251007,#070302 48%,#000);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:#ffd2a0;text-decoration:none}
+.app{max-width:1180px;margin:auto;padding:12px 12px 110px}
+.top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.brand{font-weight:1000;font-size:22px;color:var(--orange);margin-right:auto}
+.btn,.fileBtn{border:1px solid var(--line);background:#130b07;color:#ffe0bb;border-radius:15px;padding:11px 13px;font-weight:900;font-size:14px;cursor:pointer;text-align:center}
+.btn.primary{background:linear-gradient(135deg,#ffb52d,#ff8c13);color:#190900;border-color:#ffb52d}
+.btn.active{outline:2px solid var(--orange);background:#2a1208}
+.fileBtn input{display:none}
+.layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:12px}
+.panel{border:1px solid var(--line);background:rgba(12,7,4,.94);border-radius:22px;padding:12px}
+h2{font-size:18px;color:var(--gold);margin:4px 0 10px}
+.note{font-size:13px;color:var(--muted);line-height:1.45;margin-bottom:10px}
+.tabs,.tools{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.tabs .btn,.tools .btn{flex:1;min-width:86px}
+.assets{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:420px;overflow:auto}
+.asset{border:1px solid #3a2418;background:#0a0908;border-radius:14px;padding:6px;cursor:pointer}
+.asset img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;display:block}
+.asset div{font-size:11px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#dbc4b0}
+.canvasBox{background:#000;border:1px solid var(--line);border-radius:22px;padding:9px;overflow:hidden}
+canvas{display:block;width:100%;height:auto;background:#111;border-radius:15px;touch-action:none}
+.status{padding:9px 12px;border:1px solid #473020;border-radius:14px;color:#ffd6a4;background:#100906;margin-top:8px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+input[type=text]{width:100%;padding:12px;border-radius:14px;border:1px solid var(--line);background:#090706;color:#fff;font:inherit}
+.bottom{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);width:min(1160px,calc(100% - 20px));display:flex;gap:8px;padding:9px;border:1px solid var(--line);border-radius:21px;background:rgba(8,4,2,.92);backdrop-filter:blur(14px);z-index:20}
+.bottom .btn{flex:1}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.assets{max-height:245px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">∞ SHOP SCENE SLOTS</div>
+    <a class="btn" href="/ai-library">คลัง</a>
+    <a class="btn" href="/scene-builder">Scene Builder เดิม</a>
+    <a class="btn" href="/">หน้าแรก</a>
+  </div>
+  <div class="layout">
+    <aside class="panel">
+      <h2>1) เลือกฉาก</h2>
+      <div class="row">
+        <label class="fileBtn">ฉากจากเครื่อง<input id="sceneFile" type="file" accept="image/*"></label>
+        <button class="btn" onclick="setAssetTab('scene')">ฉากในคลัง</button>
+      </div>
+
+      <h2>2) เลือกแบบช่อง</h2>
+      <div class="tools">
+        <button class="btn" onclick="applyTemplate('shelf3')">ชั้น 3 ช่อง</button>
+        <button class="btn" onclick="applyTemplate('grid4')">ตาราง 4 ช่อง</button>
+        <button class="btn" onclick="applyTemplate('wall6')">ผนัง 6 ช่อง</button>
+        <button class="btn" onclick="addSlot()">+ ช่องใหม่</button>
+      </div>
+
+      <h2>3) ใส่สินค้า</h2>
+      <div class="row">
+        <label class="fileBtn">สินค้าจากเครื่อง<input id="productFile" type="file" accept="image/*"></label>
+        <button class="btn" onclick="setAssetTab('product')">สินค้าในคลัง</button>
+      </div>
+
+      <div class="tabs">
+        <button id="tabScene" class="btn" onclick="setAssetTab('scene')">ฉาก</button>
+        <button id="tabProduct" class="btn active" onclick="setAssetTab('product')">สินค้า</button>
+        <button id="tabGenerated" class="btn" onclick="setAssetTab('generated')">รูปสำเร็จ</button>
+      </div>
+      <div id="assets" class="assets"></div>
+
+      <h2>ควบคุมช่องที่เลือก</h2>
+      <div class="note">แตะช่องก่อน แล้วลากสินค้าในช่องได้ เปลี่ยนเป็น “ย้ายช่อง” เมื่อต้องการย้ายกรอบ</div>
+      <div class="tools">
+        <button id="modeProduct" class="btn active" onclick="setMode('product')">ลากสินค้า</button>
+        <button id="modeSlot" class="btn" onclick="setMode('slot')">ย้ายช่อง</button>
+      </div>
+      <div class="tools">
+        <button class="btn" onclick="zoomSelected(.9)">สินค้า −</button>
+        <button class="btn" onclick="zoomSelected(1.1)">สินค้า +</button>
+        <button class="btn" onclick="resizeSlot(.9)">ช่อง −</button>
+        <button class="btn" onclick="resizeSlot(1.1)">ช่อง +</button>
+      </div>
+      <div class="tools">
+        <button class="btn" onclick="setFit('contain')">พอดีช่อง</button>
+        <button class="btn" onclick="setFit('cover')">เต็มช่อง</button>
+        <button class="btn" onclick="resetSelected()">รีเซ็ตชิ้นนี้</button>
+        <button class="btn" onclick="deleteSelected()">ลบช่อง</button>
+      </div>
+      <div class="tools">
+        <button id="guideBtn" class="btn active" onclick="toggleGuides()">เส้นช่อง: เปิด</button>
+        <button class="btn" onclick="clearAll()">ล้างทั้งหมด</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="panel">
+        <h2>จัดร้านลงในฉาก</h2>
+        <div class="note">เลือกฉาก → เลือกแบบช่อง → แตะช่อง → แตะสินค้า → ลาก/ขยาย → บันทึก</div>
+        <div class="canvasBox"><canvas id="c" width="900" height="1200"></canvas></div>
+        <div id="status" class="status">พร้อมใช้งาน</div>
+        <div style="margin-top:10px"><input id="saveTitle" type="text" value="ร้านที่จัดจาก Shop Scene Slots"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="bottom">
+  <button class="btn" onclick="undo()">ย้อนกลับ</button>
+  <button class="btn" onclick="downloadPng()">ดาวน์โหลด PNG</button>
+  <button class="btn primary" onclick="saveToLibrary()">บันทึกเข้าคลัง</button>
+</div>
+
+<script>
+const LIB = __ITEMS_JSON__;
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let bg=null,slots=[],selectedIndex=-1,assetTab='product',dragMode='product',guides=true,history=[],dragging=false,last={x:0,y:0};
+
+function status(t){document.getElementById('status').textContent=t}
+function loadImg(src){return new Promise((ok,no)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>ok(i);i.onerror=no;i.src=src})}
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+
+function setAssetTab(t){
+  assetTab=t;
+  ['Scene','Product','Generated'].forEach(x=>{const e=document.getElementById('tab'+x);if(e)e.classList.toggle('active',x.toLowerCase()===t)});
+  renderAssets();
+}
+function renderAssets(){
+  const box=document.getElementById('assets');box.innerHTML='';
+  const list=LIB.filter(x=>x.kind===assetTab).slice().reverse();
+  if(!list.length){box.innerHTML='<div class="note">ยังไม่มีรูปในหมวดนี้ ใช้อัปโหลดจากเครื่องได้เลย</div>';return}
+  list.forEach(item=>{
+    const d=document.createElement('div');d.className='asset';
+    d.innerHTML='<img src="'+esc(item.url||'')+'"><div>'+esc(item.title||'รูป')+'</div>';
+    d.onclick=()=>useAsset(item);box.appendChild(d);
+  });
+}
+async function useAsset(item){
+  try{
+    const img=await loadImg(item.url);
+    if(item.kind==='scene'){pushHistory();bg=img;status('เลือกฉากแล้ว')}
+    else assignToSlot(img,item.url);
+    draw();
+  }catch(e){status('เปิดรูปนี้ไม่ได้')}
+}
+function fileToImage(file,cb){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=async()=>{try{cb(await loadImg(r.result),r.result)}catch(e){status('อ่านไฟล์ไม่ได้')}};
+  r.readAsDataURL(file);
+}
+document.getElementById('sceneFile').onchange=e=>{fileToImage(e.target.files[0],img=>{pushHistory();bg=img;draw();status('ใส่ฉากจากเครื่องแล้ว')});e.target.value=''};
+document.getElementById('productFile').onchange=e=>{fileToImage(e.target.files[0],(img,src)=>assignToSlot(img,src));e.target.value=''};
+
+function newSlot(x,y,w,h){return{x,y,w,h,img:null,src:'',scale:1,offsetX:0,offsetY:0,fit:'contain'}}
+function applyTemplate(name){
+  pushHistory();
+  if(name==='shelf3')slots=[newSlot(75,700,230,300),newSlot(335,700,230,300),newSlot(595,700,230,300)];
+  else if(name==='grid4')slots=[newSlot(85,420,330,300),newSlot(485,420,330,300),newSlot(85,760,330,300),newSlot(485,760,330,300)];
+  else slots=[newSlot(55,330,240,260),newSlot(330,330,240,260),newSlot(605,330,240,260),newSlot(55,650,240,260),newSlot(330,650,240,260),newSlot(605,650,240,260)];
+  selectedIndex=slots.length?0:-1;draw();status('วางแบบช่องแล้ว')
+}
+function addSlot(){pushHistory();slots.push(newSlot(300,520,300,320));selectedIndex=slots.length-1;draw();status('เพิ่มช่องใหม่แล้ว')}
+function selected(){return slots[selectedIndex]||null}
+function assignToSlot(img,src){
+  if(selectedIndex<0)addSlot();
+  const s=selected();if(!s)return;
+  pushHistory();s.img=img;s.src=src||'';s.scale=1;s.offsetX=0;s.offsetY=0;s.fit='contain';draw();status('ใส่สินค้าลงช่อง '+(selectedIndex+1)+' แล้ว')
+}
+function setMode(m){dragMode=m;document.getElementById('modeProduct').classList.toggle('active',m==='product');document.getElementById('modeSlot').classList.toggle('active',m==='slot');status(m==='product'?'ลากสินค้าในช่อง':'ลากเพื่อย้ายช่อง')}
+function zoomSelected(f){const s=selected();if(!s||!s.img)return;pushHistory();s.scale=Math.max(.1,Math.min(8,s.scale*f));draw()}
+function resizeSlot(f){const s=selected();if(!s)return;pushHistory();const cx=s.x+s.w/2,cy=s.y+s.h/2;s.w=Math.max(70,Math.min(800,s.w*f));s.h=Math.max(70,Math.min(1000,s.h*f));s.x=cx-s.w/2;s.y=cy-s.h/2;clampSlot(s);draw()}
+function setFit(f){const s=selected();if(!s)return;pushHistory();s.fit=f;s.scale=1;s.offsetX=0;s.offsetY=0;draw()}
+function resetSelected(){const s=selected();if(!s)return;pushHistory();s.scale=1;s.offsetX=0;s.offsetY=0;s.fit='contain';draw()}
+function deleteSelected(){if(selectedIndex<0)return;pushHistory();slots.splice(selectedIndex,1);selectedIndex=Math.min(selectedIndex,slots.length-1);draw()}
+function clearAll(){pushHistory();bg=null;slots=[];selectedIndex=-1;draw();status('ล้างแล้ว')}
+function toggleGuides(){guides=!guides;document.getElementById('guideBtn').textContent='เส้นช่อง: '+(guides?'เปิด':'ปิด');document.getElementById('guideBtn').classList.toggle('active',guides);draw()}
+
+function pushHistory(){history.push({bgSrc:bg?bg.src:null,slots:slots.map(s=>({x:s.x,y:s.y,w:s.w,h:s.h,src:s.src,scale:s.scale,offsetX:s.offsetX,offsetY:s.offsetY,fit:s.fit}))});if(history.length>18)history.shift()}
+async function undo(){
+  const h=history.pop();if(!h)return;
+  bg=h.bgSrc?await loadImg(h.bgSrc):null;slots=[];
+  for(const s of h.slots){const n={...s,img:null};if(s.src){try{n.img=await loadImg(s.src)}catch(e){}}slots.push(n)}
+  selectedIndex=Math.min(selectedIndex,slots.length-1);draw();status('ย้อนกลับแล้ว')
+}
+
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function drawCover(img,x,y,w,h){const sc=Math.max(w/img.width,h/img.height),dw=img.width*sc,dh=img.height*sc;ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh)}
+function drawSlot(s,i){
+  ctx.save();rr(s.x,s.y,s.w,s.h,20);ctx.clip();ctx.fillStyle='rgba(0,0,0,.22)';ctx.fillRect(s.x,s.y,s.w,s.h);
+  if(s.img){const base=s.fit==='cover'?Math.max(s.w/s.img.width,s.h/s.img.height):Math.min(s.w/s.img.width,s.h/s.img.height),dw=s.img.width*base*s.scale,dh=s.img.height*base*s.scale,cx=s.x+s.w/2+s.offsetX,cy=s.y+s.h/2+s.offsetY;ctx.drawImage(s.img,cx-dw/2,cy-dh/2,dw,dh)}
+  ctx.restore();
+  if(guides){ctx.save();rr(s.x,s.y,s.w,s.h,20);ctx.strokeStyle=i===selectedIndex?'#ff981f':'rgba(255,195,91,.72)';ctx.lineWidth=i===selectedIndex?6:3;ctx.setLineDash(i===selectedIndex?[]:[12,8]);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(0,0,0,.72)';ctx.fillRect(s.x+8,s.y+8,48,36);ctx.fillStyle='#ffc35b';ctx.font='bold 22px system-ui';ctx.fillText(String(i+1),s.x+23,s.y+34);ctx.restore()}
+}
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(bg)drawCover(bg,0,0,canvas.width,canvas.height);else{const g=ctx.createLinearGradient(0,0,0,canvas.height);g.addColorStop(0,'#271207');g.addColorStop(1,'#050302');ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#ff981f';ctx.font='bold 44px system-ui';ctx.textAlign='center';ctx.fillText('เลือกฉากก่อน',canvas.width/2,170);ctx.textAlign='start'}
+  slots.forEach(drawSlot)
+}
+function point(ev){const r=canvas.getBoundingClientRect();return{x:(ev.clientX-r.left)*canvas.width/r.width,y:(ev.clientY-r.top)*canvas.height/r.height}}
+function hit(x,y){for(let i=slots.length-1;i>=0;i--){const s=slots[i];if(x>=s.x&&x<=s.x+s.w&&y>=s.y&&y<=s.y+s.h)return i}return-1}
+function clampSlot(s){s.x=Math.max(0,Math.min(canvas.width-s.w,s.x));s.y=Math.max(0,Math.min(canvas.height-s.h,s.y))}
+canvas.onpointerdown=ev=>{const p=point(ev),i=hit(p.x,p.y);if(i<0){selectedIndex=-1;draw();return}selectedIndex=i;dragging=true;last=p;canvas.setPointerCapture(ev.pointerId);pushHistory();draw()}
+canvas.onpointermove=ev=>{if(!dragging||selectedIndex<0)return;const p=point(ev),dx=p.x-last.x,dy=p.y-last.y,s=selected();if(dragMode==='slot'){s.x+=dx;s.y+=dy;clampSlot(s)}else{s.offsetX+=dx;s.offsetY+=dy}last=p;draw()}
+canvas.onpointerup=()=>dragging=false;canvas.onpointercancel=()=>dragging=false;
+
+function cleanData(){const old=guides;guides=false;draw();const data=canvas.toDataURL('image/png');guides=old;draw();return data}
+function downloadPng(){const a=document.createElement('a');a.href=cleanData();a.download='infini-shop-scene.png';a.click();status('ดาวน์โหลด PNG แล้ว')}
+async function saveToLibrary(){
+  try{
+    status('กำลังบันทึก...');
+    const res=await fetch('/shop-scene-builder/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:document.getElementById('saveTitle').value,image_data:cleanData()})});
+    const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||'save failed');status('บันทึกเข้าคลังรูปสำเร็จแล้ว')
+  }catch(e){status('บันทึกไม่สำเร็จ: '+e.message)}
+}
+
+renderAssets();applyTemplate('shelf3');draw();
+</script>
+</body>
+</html>'''
+    return page.replace("__ITEMS_JSON__", items_json)
+
+def install_shop_scene_slots_7000(app) -> None:
+    if getattr(app.state, "_infini_shop_scene_slots_v1", False):
+        return
+    app.state._infini_shop_scene_slots_v1 = True
+
+    async def page() -> HTMLResponse:
+        return HTMLResponse(_html(_load_library().get("items", [])))
+
+    async def save(request: Request) -> JSONResponse:
+        try:
+            payload = await request.json()
+            title = str(payload.get("title") or "ร้านที่จัดจาก Shop Scene Slots").strip()
+            raw = _decode_png(str(payload.get("image_data") or ""))
+            stored = "generated_shop_slots_" + uuid.uuid4().hex + ".png"
+            (LIB_UPLOADS / stored).write_bytes(raw)
+            item = {
+                "id": "img_" + uuid.uuid4().hex[:12],
+                "kind": "generated",
+                "title": title or "ร้านที่จัดจาก Shop Scene Slots",
+                "stored": stored,
+                "url": "/ai-library/file/" + stored,
+                "created_at": int(time.time()),
+                "source": MODULE_NAME,
+            }
+            data = _load_library()
+            data.setdefault("items", []).append(item)
+            _save_library(data)
+            return JSONResponse({"ok": True, "item": item})
+        except Exception as exc:
+            return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+
+    app.add_api_route("/shop-scene-builder", page, methods=["GET"], response_class=HTMLResponse, name="shop_scene_slots_page_v1")
+    app.add_api_route("/shop-scene-builder/save", save, methods=["POST"], response_class=JSONResponse, name="shop_scene_slots_save_v1")

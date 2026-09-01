@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "groups": {
+    "2.2": {
+      "group_no": "2.2",
+      "pages": [
+        {
+          "id": "detail_65ca6d42af7f",
+          "no": "2.2.1",
+          "media_url": "",
+          "media_type": "",
+          "detail": "",
+          "zone": "",
+          "messages": [],
+          "created_at": 1786011386,
+          "updated_at": 1786011386
+        }
+      ],
+      "created_at": 1786011386,
+      "updated_at": 1786013843
+    },
+    "1.1": {
+      "group_no": "1.1",
+      "pages": [
+        {
+          "id": "detail_f58c27562087",
+          "no": "1.1.1",
+          "media_url": "",
+          "media_type": "",
+          "detail": "",
+          "zone": "",
+          "messages": [],
+          "created_at": 1786011491,
+          "updated_at": 1786011491
+        }
+      ],
+      "created_at": 1786011491,
+      "updated_at": 1786011491
+    }
+  }
+}

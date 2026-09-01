@@ -1,0 +1,60 @@
+{
+  "name": "",
+  "username": "",
+  "infini_id": "INF-000001",
+  "bio": "",
+  "api_key": "",
+  "cover_url": "",
+  "cover_type": "",
+  "gallery": [
+    {
+      "src": "/id-home-media/b9361610ca0346039c732dab9869b3de.jpg",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/id-home-media/d82a29737db44854936100cc298f4e2b.mp4",
+      "type": "video/mp4"
+    },
+    {
+      "src": "/id-home-media/d49039c0ed8644938729aa97b79a5dba.png",
+      "type": "image/png"
+    },
+    {
+      "src": "/id-home-media/dfddbd115256459990c1040393402659.jpg",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/id-home-media/493d6439ca7646bb8f926a379672e4b6.jpg",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/id-home-media/b211dc1718b44b85b6edcf42b0fb7291.png",
+      "type": "image/png"
+    },
+    {
+      "src": "/id-home-media/7ad0ae3f3cf24f85af8610fc3687cb87.jpg",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/id-home-media/a0ca60b3211e4798af52292db0c39d83.jpg",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/id-home-media/97ef233097bd4de39b1f6481f0120934.png",
+      "type": "image/png"
+    },
+    {
+      "src": "/id-home-media/71f1940b5e5b4e32a5e38c6ae44b2c8f.jpg",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/id-home-media/251a63fd6dda4d1e8c31a4c0d682bba4.png",
+      "type": "image/png"
+    },
+    {
+      "src": "/id-home-media/b3ae89ecfa364ff687b49470f91a44e4.png",
+      "type": "image/png"
+    }
+  ],
+  "chat": []
+}

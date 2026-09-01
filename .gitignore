@@ -1,0 +1,64 @@
+# === INFINI: user-uploaded media stays OUT of git ===
+# All images/videos users upload while using the app are backed up to
+# Cloudinary automatically by backup_sync.py (see storage.py / start.py),
+# and restored from there on every deploy. Committing them to git as well
+# caused GitHub's free Git LFS storage/bandwidth budget to be exceeded,
+# which broke every deploy ("This repository exceeded its LFS budget").
+# Only code needs to be in git — media does not.
+
+# Generic: any folder literally named "uploads" anywhere in the tree
+**/uploads/
+**/uploads/**
+
+# Known specific upload folders in this project (kept explicit too, in
+# case a future refactor renames the generic "uploads" pattern above)
+7000/ai_shop_uploads/
+7000/id_entry_7000_uploads/
+7000/id_home_uploads/
+8046/ad_market_uploads/
+8046/home_uploads/
+8046/dashboard_uploads/
+
+# NOTE: small auto-generated media under data/ folders (zone headers,
+# scene images, a couple of story videos — ~1.5MB total) is deliberately
+# KEPT in git, not excluded. backup_sync.py also backs these up to
+# Cloudinary, but since deploys have failed repeatedly in the past it's
+# not certain that backup ever ran successfully — excluding them here
+# without a confirmed Cloudinary copy would risk losing them for good.
+# They're tiny and no longer use Git LFS, so there's no cost to keeping
+# them in git as a guaranteed copy.
+
+# Local/dev artifacts that should never be committed
+__pycache__/
+*.pyc
+.DS_Store
+*.tmp
+
+# Local test/session state (regenerated automatically at runtime)
+8032/data/users.json
+8032/data/infini_session_secret.txt
+7000/id_entry_7000_state.json
+star_trand_service/data/config.json
+star_trand_service/data/memory.json
+
+# Exception: 8046/uploads/normal_ad_media and normal_reward_media are NOT
+# per-user ephemeral uploads — they're fixed-filename base/default media
+# referenced directly by code (normal_ad_images.py / normal_reward_images.py)
+# for the built-in ad/reward templates. Recovered real files, kept in git
+# so the app has default images out of the box instead of empty templates.
+!8046/uploads/
+!8046/uploads/normal_ad_media/
+!8046/uploads/normal_ad_media/**
+!8046/uploads/normal_reward_media/
+!8046/uploads/normal_reward_media/**
+
+# Exception: recovered real uploads for user_bb290f5bb6f4, confirmed by
+# cross-referencing 7000/data/user_spaces/user_bb290f5bb6f4/*.json — these
+# filenames are actually referenced by that user's saved state (detail
+# swipe cards, remote show, etc.), so without them those features show
+# broken media. Kept in git as a guaranteed copy for the same reason as
+# the small data/ media above (past deploys failed before Cloudinary
+# backup could run, so there's no confirmed backup to restore from).
+!7000/uploads/
+!7000/uploads/user_bb290f5bb6f4/
+!7000/uploads/user_bb290f5bb6f4/**

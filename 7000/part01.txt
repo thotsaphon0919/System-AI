@@ -1,0 +1,250 @@
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from pathlib import Path
+from typing import Optional, List
+import json, shutil, uuid, time, re, mimetypes
+
+APP_NAME = "INFINI Remote Show V1"
+BASE = Path(__file__).resolve().parent
+DATA = BASE / "data"
+UPLOADS = BASE / "uploads"
+STATE = DATA / "remote_show_state.json"
+OLD_STATE = DATA / "remote_state.json"
+
+DATA.mkdir(parents=True, exist_ok=True)
+UPLOADS.mkdir(parents=True, exist_ok=True)
+
+app = FastAPI(title=APP_NAME)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS)), name="uploads")
+
+
+def now():
+    return int(time.time())
+
+
+def uid(prefix: str):
+    return f"{prefix}_{uuid.uuid4().hex[:10]}"
+
+
+def clean_name(name: str):
+    name = name or "upload.bin"
+    name = re.sub(r"[^a-zA-Z0-9._-]+", "-", name)
+    return name[:90] or "upload.bin"
+
+
+def media_type(filename: str, content_type: str = ""):
+    ct = (content_type or mimetypes.guess_type(filename)[0] or "").lower()
+    return "video" if ct.startswith("video/") else "image"
+
+
+def dump_model(m):
+    if hasattr(m, "model_dump"):
+        return m.model_dump(exclude_unset=True)
+    return m.dict(exclude_unset=True)
+
+
+def default_items():
+    return [
+        {
+            "id": uid("item"),
+            "title": f"no.{i}",
+            "subtitle": "",
+            "detail": "",
+            "media_url": "",
+            "media_type": "",
+            "link_url": "",
+            "enabled": True,
+            "created_at": now(),
+            "updated_at": now(),
+        }
+        for i in range(1, 6)
+    ]
+
+
+def make_page(title="หน้าโชว์", subtitle="หน้าโชว์ของย่อย", media_url="", media_type="", link_url=""):
+    return {
+        "id": uid("page"),
+        "title": title,
+        "subtitle": subtitle,
+        "detail": "",
+        "media_url": media_url,
+        "media_type": media_type,
+        "link_url": link_url,
+        "enabled": True,
+        "publish": "private",
+        "items": default_items(),
+        "created_at": now(),
+        "updated_at": now(),
+    }
+
+
+def ensure_item(it, idx):
+    it.setdefault("id", uid("item"))
+    it.setdefault("title", f"no.{idx}")
+    it.setdefault("subtitle", "")
+    it.setdefault("detail", "")
+    it.setdefault("media_url", "")
+    it.setdefault("media_type", "")
+    it.setdefault("link_url", "")
+    it.setdefault("enabled", True)
+    it.setdefault("created_at", now())
+    it.setdefault("updated_at", now())
+    return it
+
+
+def ensure_page(pg, idx=1):
+    pg.setdefault("id", uid("page"))
+    pg.setdefault("title", f"หน้าโชว์ {idx}")
+    pg.setdefault("subtitle", "หน้าโชว์ของย่อย")
+    pg.setdefault("detail", "")
+    pg.setdefault("media_url", "")
+    pg.setdefault("media_type", "")
+    pg.setdefault("link_url", "")
+    pg.setdefault("enabled", True)
+    pg.setdefault("publish", "private")
+    pg.setdefault("created_at", now())
+    pg.setdefault("updated_at", now())
+
+    items = pg.get("items")
+    if not isinstance(items, list):
+        items = pg.get("children") if isinstance(pg.get("children"), list) else []
+    while len(items) < 5:
+        items.append({"id": uid("item"), "title": f"no.{len(items)+1}"})
+    pg["items"] = [ensure_item(it, i + 1) for i, it in enumerate(items[:5])]
+    return pg
+
+
+def migrate_old_state():
+    pages = []
+    if OLD_STATE.exists():
+        try:
+            old = json.loads(OLD_STATE.read_text(encoding="utf-8"))
+            sheets = old.get("sheets", [])
+            home_slots = sheets[0].get("slots", []) if sheets else []
+            seen = set()
+            for i, sl in enumerate(home_slots, 1):
+                title = sl.get("title") or f"หน้าโชว์ {i}"
+                key = (title, sl.get("media_url", ""), sl.get("link_url", ""))
+                if key in seen:
+                    continue
+                seen.add(key)
+                pages.append(ensure_page({
+                    "id": sl.get("id") or uid("page"),
+                    "title": title,
+                    "subtitle": "หน้าโชว์ของย่อย",
+                    "detail": sl.get("detail", ""),
+                    "media_url": sl.get("media_url", ""),
+                    "media_type": sl.get("media_type", ""),
+                    "link_url": sl.get("link_url", ""),
+                    "enabled": sl.get("enabled", True),
+                    "publish": sl.get("publish", "private"),
+                    "items": sl.get("children", []) or default_items(),
+                    "created_at": sl.get("created_at", now()),
+                    "updated_at": sl.get("updated_at", now()),
+                }, i))
+        except Exception:
+            pages = []
+
+    if not pages:
+        pages = [
+            make_page("no.1", "หน้าโชว์ของย่อย"),
+            make_page("no.2", "หน้าโชว์ของย่อย"),
+            make_page("no.3", "หน้าโชว์ของย่อย"),
+        ]
+
+    return {
+        "app": APP_NAME,
+        "version": "1.0.0",
+        "settings": {"mode": "show-pages-only", "port": 7000},
+        "pages": pages,
+    }
+
+
+def load_state():
+    if not STATE.exists():
+        return save_state(migrate_old_state())
+
+    try:
+        st = json.loads(STATE.read_text(encoding="utf-8"))
+    except Exception:
+        broken = STATE.with_suffix(f".broken.{now()}.json")
+        try:
+            shutil.move(str(STATE), str(broken))
+        except Exception:
+            pass
+        st = migrate_old_state()
+
+    st.setdefault("app", APP_NAME)
+    st.setdefault("settings", {"mode": "show-pages-only", "port": 7000})
+    st.setdefault("pages", [])
+    if not st["pages"]:
+        st["pages"] = [make_page("no.1"), make_page("no.2")]
+
+    st["pages"] = [ensure_page(pg, i + 1) for i, pg in enumerate(st["pages"])]
+    return save_state(st)
+
+
+def save_state(st):
+    tmp = STATE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(st, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(STATE)
+    return st
+
+
+def find_page(st, page_id):
+    for pg in st.get("pages", []):
+        if pg.get("id") == page_id:
+            return pg
+    raise HTTPException(404, "page not found")
+
+
+def find_item(page, item_id):
+    for it in page.get("items", []):
+        if it.get("id") == item_id:
+            return it
+    raise HTTPException(404, "item not found")
+
+
+def save_upload_file(file: UploadFile):
+    original = clean_name(file.filename)
+    ext = Path(original).suffix or ".bin"
+    name = f"{now()}_{uuid.uuid4().hex[:8]}{ext}"
+    dest = UPLOADS / name
+    with dest.open("wb") as f:
+        shutil.copyfileobj(file.file, f)
+    return f"/uploads/{name}", media_type(name, file.content_type or "")
+
+
+class PageIn(BaseModel):
+    title: str = "หน้าโชว์"
+    subtitle: str = "หน้าโชว์ของย่อย"
+
+
+class PatchIn(BaseModel):
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    detail: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+    link_url: Optional[str] = None
+    enabled: Optional[bool] = None
+    publish: Optional[str] = None
+
+
+HTML = r'''
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>INFINI Remote Show V1</title>
+<style>
+:root{--bg:#050302;--orange:#ff9200;--orange2:#ffbd20;--line:rgba(255,145,0,.35);--text:#fff7ef;--muted:#d8b892}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(circle at top,#241104,#050302 48%,#000);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.app{padding:14px 14px 112px;max-width:980px;margin:auto}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--orange2),var(--orange));display:grid;place-items:center;color:#1b0800;font-weight:1000;font-size:24px}

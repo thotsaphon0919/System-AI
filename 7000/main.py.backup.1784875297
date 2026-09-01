@@ -1,0 +1,999 @@
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from pathlib import Path
+from typing import Optional
+import json, shutil, uuid, time, re, mimetypes
+
+APP_NAME = "INFINI Remote PRO V1"
+BASE = Path(__file__).resolve().parent
+DATA = BASE / "data"
+UPLOADS = BASE / "uploads"
+STATE = DATA / "remote_state.json"
+
+DATA.mkdir(parents=True, exist_ok=True)
+UPLOADS.mkdir(parents=True, exist_ok=True)
+
+app = FastAPI(title=APP_NAME)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS)), name="uploads")
+
+
+def now():
+    return int(time.time())
+
+
+def uid(p):
+    return f"{p}_{uuid.uuid4().hex[:10]}"
+
+
+def clean_name(name):
+    name = name or "upload.bin"
+    name = re.sub(r"[^a-zA-Z0-9._-]+", "-", name)
+    return name[:80] or "upload.bin"
+
+
+def media_type(filename, content_type=""):
+    ct = (content_type or mimetypes.guess_type(filename)[0] or "").lower()
+    return "video" if ct.startswith("video/") else "image"
+
+
+def dump_model(m):
+    if hasattr(m, "model_dump"):
+        return m.model_dump(exclude_unset=True)
+    return m.dict(exclude_unset=True)
+
+
+DEFAULT_LINKS = {
+    "creative": "/creative",
+    "space": "/space",
+    "zone": "/zone",
+    "upload": "/upload-room",
+    "link": "/link-room",
+    "setting": "/setting-room",
+}
+
+
+def default_state():
+    defs = [
+        ("Creative", "สร้าง/เปิดแผ่นงาน", "creative"),
+        ("Space", "หน้าสาธารณะ", "space"),
+        ("Zone", "โซน / ห้อง / ร้าน", "zone"),
+        ("Upload", "รูป / วิดีโอ", "upload"),
+        ("Link", "เชื่อมหน้า / เว็บ", "link"),
+        ("Setting", "ตั้งค่า Slot", "setting"),
+    ]
+    slots = []
+    for title, sub, kind in defs:
+        slots.append({
+            "id": uid("slot"),
+            "title": title,
+            "subtitle": sub,
+            "kind": kind,
+            "media_url": "",
+            "media_type": "",
+            "link_url": DEFAULT_LINKS.get(kind, ""),
+            "enabled": True,
+            "created_at": now(),
+            "updated_at": now(),
+        })
+    return {
+        "app": APP_NAME,
+        "settings": {
+            "active_sheet": "home",
+            "theme": "orange-black",
+            "port": 7000,
+        },
+        "sheets": [{
+            "id": "home",
+            "title": "INFINI REMOTE PRO",
+            "description": "แตะ Slot = ใช้งาน / กดค้าง Slot = เปิด Remote เพื่อใส่รูป วิดีโอ ลิงก์ และตั้งค่า",
+            "order": 0,
+            "created_at": now(),
+            "updated_at": now(),
+            "slots": slots,
+        }]
+    }
+
+
+def load_state():
+    if not STATE.exists():
+        save_state(default_state())
+
+    try:
+        with STATE.open("r", encoding="utf-8") as f:
+            st = json.load(f)
+    except Exception:
+        st = default_state()
+        save_state(st)
+
+    st.setdefault("settings", {})
+    st["settings"].setdefault("active_sheet", "home")
+    st.setdefault("sheets", [])
+
+    if not st["sheets"]:
+        st = default_state()
+
+    for sheet in st["sheets"]:
+        sheet.setdefault("slots", [])
+        sheet.setdefault("description", "")
+        for slot in sheet["slots"]:
+            slot.setdefault("id", uid("slot"))
+            slot.setdefault("title", "Slot")
+            slot.setdefault("subtitle", "")
+            slot.setdefault("kind", "action")
+            slot.setdefault("media_url", "")
+            slot.setdefault("media_type", "")
+            slot.setdefault("link_url", "")
+            slot.setdefault("enabled", True)
+
+            k = str(slot.get("kind", "")).lower()
+            if not slot.get("link_url") and k in DEFAULT_LINKS:
+                slot["link_url"] = DEFAULT_LINKS[k]
+
+    save_state(st)
+    return st
+
+
+def save_state(st):
+    tmp = STATE.with_suffix(".tmp")
+    with tmp.open("w", encoding="utf-8") as f:
+        json.dump(st, f, ensure_ascii=False, indent=2)
+    tmp.replace(STATE)
+    return st
+
+
+def find_sheet(st, sheet_id):
+    for s in st["sheets"]:
+        if s["id"] == sheet_id:
+            return s
+    raise HTTPException(404, "sheet not found")
+
+
+def find_slot(sheet, slot_id):
+    for sl in sheet["slots"]:
+        if sl["id"] == slot_id:
+            return sl
+    raise HTTPException(404, "slot not found")
+
+
+class SheetIn(BaseModel):
+    title: str = "New Sheet"
+    description: str = ""
+
+
+class SlotIn(BaseModel):
+    title: str = "New Slot"
+    subtitle: str = ""
+    kind: str = "action"
+
+
+class SlotPatch(BaseModel):
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    kind: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+    link_url: Optional[str] = None
+    enabled: Optional[bool] = None
+
+
+class SettingsPatch(BaseModel):
+    active_sheet: Optional[str] = None
+
+
+HTML = r"""
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>INFINI Remote PRO V1</title>
+<style>
+:root{--bg:#050302;--card:#120905;--orange:#ff8500;--orange2:#ffb000;--line:rgba(255,133,0,.35);--text:#fff7ef;--muted:#d8b892}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(circle at top,#281204,#050302 45%,#000);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.app{padding:14px 14px 106px;max-width:980px;margin:auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.logo{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--orange2),var(--orange));display:grid;place-items:center;color:#1a0800;font-weight:1000;font-size:24px;box-shadow:0 0 28px rgba(255,133,0,.35)}
+.brand{display:flex;gap:10px;align-items:center}
+h1{font-size:18px;margin:0;letter-spacing:.04em}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.btn{border:1px solid var(--line);background:linear-gradient(180deg,#211007,#080402);color:var(--text);border-radius:15px;padding:11px 13px;font-weight:900;font-size:14px}
+.btn.primary{background:linear-gradient(135deg,var(--orange2),var(--orange));color:#180700;border-color:var(--orange2)}
+.btn.danger{color:#ffb8b8;border-color:rgba(255,80,80,.55)}
+.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:9px}
+.tab{white-space:nowrap;border:1px solid var(--line);border-radius:999px;background:rgba(255,133,0,.06);color:var(--muted);padding:9px 12px;font-weight:900}
+.tab.active{background:linear-gradient(135deg,var(--orange2),var(--orange));color:#1a0800}
+.head{border:1px solid var(--line);border-radius:24px;background:rgba(18,9,5,.74);padding:14px;margin:2px 0 14px}
+.head h2{margin:0;font-size:22px}
+.head p{margin:7px 0 0;color:#ffd7ad;font-size:14px;line-height:1.4}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(min-width:720px){.grid{grid-template-columns:repeat(3,1fr)}}
+.slot{position:relative;min-height:166px;border:1px solid var(--line);border-radius:25px;overflow:hidden;background:linear-gradient(160deg,rgba(255,133,0,.18),rgba(0,0,0,.96));box-shadow:0 18px 40px rgba(0,0,0,.35);touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.slot:active{transform:scale(.985)}
+.slot.off{opacity:.45}
+.media{position:absolute;inset:0}
+.media img,.media video{width:100%;height:100%;object-fit:cover;display:block}
+.plus{position:absolute;inset:0;display:grid;place-items:center;font-size:58px;color:rgba(255,160,0,.24);font-weight:200}
+.slot:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.82))}
+.body{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:14px}
+.badge{display:inline-block;border-radius:999px;background:linear-gradient(135deg,var(--orange2),var(--orange));color:#160600;font-size:12px;font-weight:1000;padding:7px 12px;text-transform:uppercase}
+.body h3{font-size:21px;margin:10px 0 4px}
+.body p{font-size:14px;margin:0;color:#ffd7ad}
+.bar{position:fixed;left:50%;bottom:13px;transform:translateX(-50%);width:min(960px,calc(100% - 22px));display:flex;gap:8px;padding:10px;border:1px solid var(--line);border-radius:24px;background:rgba(9,4,2,.86);backdrop-filter:blur(14px);z-index:20}
+.bar .btn{flex:1}
+.toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:99;background:#1a0b04;border:1px solid var(--line);border-radius:999px;padding:11px 15px;color:#ffd7ad;display:none}
+.toast.show{display:block}
+.back{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:40;display:none}
+.back.show{display:block}
+.drawer{position:fixed;left:0;right:0;bottom:0;z-index:50;max-height:88vh;overflow:auto;background:linear-gradient(180deg,#251006,#050302);border-top:1px solid var(--line);border-radius:28px 28px 0 0;transform:translateY(105%);transition:.22s}
+.drawer.show{transform:translateY(0)}
+.inner{padding:18px;max-width:760px;margin:auto}
+.inner h2{margin:0 0 4px}
+.small{font-size:12px;color:var(--muted);margin-bottom:12px}
+.field{margin-bottom:10px}
+label{display:block;color:#ffd7ad;font-size:12px;font-weight:900;margin-bottom:5px}
+input,textarea,select{width:100%;border:1px solid var(--line);background:#070402;color:var(--text);border-radius:14px;padding:12px;font:inherit;outline:none}
+.preview{min-height:125px;border:1px dashed var(--line);border-radius:18px;margin-bottom:12px;display:grid;place-items:center;overflow:hidden;color:#ffd7ad;background:#070402}
+.preview img,.preview video{width:100%;max-height:260px;object-fit:contain}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:80;display:none;place-items:center;padding:16px}
+.viewer.show{display:grid}
+.viewer img,.viewer video{max-width:100%;max-height:86vh;border-radius:18px}
+.closev{position:absolute;top:12px;right:12px}
+
+.remoteBtn{
+  position:absolute;
+  top:9px;
+  right:9px;
+  z-index:5;
+  border:1px solid rgba(255,176,0,.55);
+  background:rgba(0,0,0,.62);
+  color:#ffb000;
+  border-radius:999px;
+  width:38px;
+  height:38px;
+  font-size:18px;
+  font-weight:900;
+}
+
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <div class="logo">∞</div>
+      <div>
+        <h1>INFINI REMOTE PRO V1</h1>
+        <div class="sub">แตะ = ใช้งาน / กดค้าง = เปิด Remote</div>
+      </div>
+    </div>
+    <button class="btn" id="shareBtn">แชร์</button>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="head">
+    <h2 id="title">Loading</h2>
+    <p id="desc"></p>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="bar">
+  <button class="btn primary" id="addSheetBtn">+ แผ่น</button>
+  <button class="btn primary" id="addSlotBtn">+ Slot</button>
+  <button class="btn" id="copySheetBtn">คัดลอกแผ่น</button>
+</div>
+
+<div class="back" id="back"></div>
+<div class="drawer" id="drawer">
+  <div class="inner">
+    <h2>Remote Slot</h2>
+    <div class="small" id="meta">Setting Engine</div>
+
+    <div class="preview" id="preview">ยังไม่มีสื่อ</div>
+
+    <div class="field">
+      <label>ชื่อ Slot</label>
+      <input id="fTitle">
+    </div>
+
+    <div class="field">
+      <label>คำอธิบาย</label>
+      <textarea id="fSubtitle" rows="2"></textarea>
+    </div>
+
+    <div class="field">
+      <label>ชนิด Slot</label>
+      <select id="fKind">
+        <option value="creative">creative</option>
+        <option value="space">space</option>
+        <option value="zone">zone</option>
+        <option value="upload">upload</option>
+        <option value="link">link</option>
+        <option value="setting">setting</option>
+        <option value="action">action</option>
+        <option value="sheet">sheet</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>ลิงก์ที่แตะแล้วเปิด</label>
+      <input id="fLink" placeholder="/creative หรือ https://...">
+    </div>
+
+    <div class="field">
+      <label>รูป / วิดีโอ</label>
+      <input id="fFile" type="file" accept="image/*,video/*">
+    </div>
+
+    <div class="field">
+      <label><input id="fEnabled" type="checkbox"> เปิดใช้งาน</label>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="saveBtn">บันทึก</button>
+      <button class="btn" id="uploadBtn">อัปโหลด</button>
+      <button class="btn" id="clearBtn">ล้างสื่อ</button>
+      <button class="btn danger" id="deleteBtn">ลบ Slot</button>
+      <button class="btn" id="closeBtn">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="viewer" id="viewer">
+  <button class="btn closev" id="closeViewerBtn">ปิด</button>
+  <div id="viewerBody"></div>
+</div>
+
+<script>
+let state = null;
+let activeSheetId = "home";
+let selected = {sheetId:null, slotId:null};
+let pressTimer = null;
+let longPress = false;
+
+const $ = id => document.getElementById(id);
+
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1700);
+}
+
+async function api(url, opt={}){
+  const res = await fetch(url, {
+    headers: {"Content-Type":"application/json", ...(opt.headers||{})},
+    ...opt
+  });
+  if(!res.ok){
+    const txt = await res.text();
+    throw new Error(txt);
+  }
+  return await res.json();
+}
+
+function sheet(){
+  return state.sheets.find(s=>s.id===activeSheetId) || state.sheets[0];
+}
+
+async function load(){
+  state = await api("/api/state");
+
+  const m = location.pathname.match(/^\/sheet\/([^\/]+)/);
+  if(m){
+    activeSheetId = decodeURIComponent(m[1]);
+    await api("/api/settings", {
+      method:"POST",
+      body:JSON.stringify({active_sheet:activeSheetId})
+    });
+  }else{
+    activeSheetId = state.settings.active_sheet || state.sheets[0].id;
+  }
+
+  render();
+}
+
+function render(){
+  renderTabs();
+  const s = sheet();
+  $("title").textContent = s.title || "INFINI REMOTE";
+  $("desc").textContent = s.description || "แตะเพื่อเปิด / กดค้างเพื่อแก้";
+
+  const grid = $("grid");
+  grid.innerHTML = "";
+
+  s.slots.forEach(slot=>{
+    grid.appendChild(makeSlot(s, slot));
+  });
+}
+
+function renderTabs(){
+  const box = $("tabs");
+  box.innerHTML = "";
+  state.sheets.forEach(s=>{
+    const b = document.createElement("button");
+    b.className = "tab " + (s.id===activeSheetId ? "active" : "");
+    b.textContent = s.title || "Sheet";
+    b.addEventListener("click", async ()=>{
+      activeSheetId = s.id;
+      state = await api("/api/settings", {
+        method:"POST",
+        body:JSON.stringify({active_sheet:s.id})
+      });
+      render();
+    });
+    box.appendChild(b);
+  });
+}
+
+function makeSlot(s, slot){
+  const el = document.createElement("div");
+  el.className = "slot " + (slot.enabled === false ? "off" : "");
+
+  let media = '<div class="plus">+</div>';
+  if(slot.media_url && slot.media_type === "video"){
+    media = `<div class="media"><video src="${slot.media_url}" muted autoplay loop playsinline></video></div>`;
+  }else if(slot.media_url){
+    media = `<div class="media"><img src="${slot.media_url}"></div>`;
+  }
+
+  el.innerHTML = `
+    ${media}
+    <button class="remoteBtn" type="button">⚙</button>
+    <div class="body">
+      <span class="badge">${esc(slot.kind || "action")}</span>
+      <h3>${esc(slot.title || "Slot")}</h3>
+      <p>${esc(slot.subtitle || "แตะใช้งาน / กดค้างแก้ไข")}</p>
+    </div>
+  `;
+
+  const remoteBtn = el.querySelector(".remoteBtn");
+  remoteBtn.addEventListener("click", (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    openRemote(s.id, slot.id);
+  });
+
+  let timer = null;
+  let fired = false;
+  let sx = 0;
+  let sy = 0;
+
+  function clearPress(){
+    if(timer){
+      clearTimeout(timer);
+      timer = null;
+    }
+  }
+
+  function startPress(x, y){
+    fired = false;
+    sx = x;
+    sy = y;
+    clearPress();
+
+    timer = setTimeout(()=>{
+      fired = true;
+      if(navigator.vibrate) navigator.vibrate(40);
+      openRemote(s.id, slot.id);
+    }, 650);
+  }
+
+  el.addEventListener("pointerdown", (e)=>{
+    if(e.target.closest(".remoteBtn")) return;
+    startPress(e.clientX, e.clientY);
+  });
+
+  el.addEventListener("pointermove", (e)=>{
+    const dx = Math.abs(e.clientX - sx);
+    const dy = Math.abs(e.clientY - sy);
+    if(dx > 22 || dy > 22){
+      clearPress();
+    }
+  });
+
+  el.addEventListener("pointerup", (e)=>{
+    if(e.target.closest(".remoteBtn")) return;
+
+    clearPress();
+
+    if(fired){
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    useSlot(s.id, slot.id);
+  });
+
+  el.addEventListener("pointercancel", clearPress);
+  el.addEventListener("pointerleave", clearPress);
+
+  el.addEventListener("contextmenu", (e)=>{
+    e.preventDefault();
+  });
+
+  return el;
+}
+
+function esc(x){
+  return String(x||"").replace(/[&<>"]/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+}
+
+function getSlot(sheetId, slotId){
+  const s = state.sheets.find(x=>x.id===sheetId);
+  return s.slots.find(x=>x.id===slotId);
+}
+
+function useSlot(sheetId, slotId){
+  const slot = getSlot(sheetId, slotId);
+
+  if(slot.enabled === false){
+    toast("Slot นี้ปิดอยู่");
+    return;
+  }
+
+  if(slot.link_url){
+    location.href = slot.link_url;
+    return;
+  }
+
+  if(slot.media_url){
+    openViewer(slot);
+    return;
+  }
+
+  openRemote(sheetId, slotId);
+}
+
+function openRemote(sheetId, slotId){
+  selected = {sheetId, slotId};
+  const s = state.sheets.find(x=>x.id===sheetId);
+  const slot = getSlot(sheetId, slotId);
+
+  $("meta").textContent = `${s.title} / ${slot.title}`;
+  $("fTitle").value = slot.title || "";
+  $("fSubtitle").value = slot.subtitle || "";
+  $("fKind").value = slot.kind || "action";
+  $("fLink").value = slot.link_url || "";
+  $("fEnabled").checked = slot.enabled !== false;
+  $("fFile").value = "";
+
+  showPreview(slot);
+  $("back").classList.add("show");
+  $("drawer").classList.add("show");
+}
+
+function closeRemote(){
+  $("back").classList.remove("show");
+  $("drawer").classList.remove("show");
+}
+
+function showPreview(slot){
+  const p = $("preview");
+  if(slot.media_url && slot.media_type === "video"){
+    p.innerHTML = `<video src="${slot.media_url}" controls playsinline></video>`;
+  }else if(slot.media_url){
+    p.innerHTML = `<img src="${slot.media_url}">`;
+  }else{
+    p.textContent = "ยังไม่มีสื่อ";
+  }
+}
+
+async function saveSlot(){
+  state = await api(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}`, {
+    method:"PATCH",
+    body:JSON.stringify({
+      title:$("fTitle").value,
+      subtitle:$("fSubtitle").value,
+      kind:$("fKind").value,
+      link_url:$("fLink").value,
+      enabled:$("fEnabled").checked
+    })
+  });
+  toast("บันทึกแล้ว");
+  render();
+  showPreview(getSlot(selected.sheetId, selected.slotId));
+}
+
+async function uploadFile(){
+  const file = $("fFile").files[0];
+  if(!file){
+    toast("เลือกรูปหรือวิดีโอก่อน");
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const res = await fetch(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}/upload`, {
+    method:"POST",
+    body:fd
+  });
+
+  if(!res.ok){
+    toast("อัปโหลดไม่สำเร็จ");
+    return;
+  }
+
+  state = await res.json();
+  toast("อัปโหลดแล้ว");
+  render();
+  showPreview(getSlot(selected.sheetId, selected.slotId));
+}
+
+async function clearMedia(){
+  state = await api(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}`, {
+    method:"PATCH",
+    body:JSON.stringify({media_url:"", media_type:""})
+  });
+  toast("ล้างสื่อแล้ว");
+  render();
+  showPreview(getSlot(selected.sheetId, selected.slotId));
+}
+
+async function deleteSlot(){
+  if(!confirm("ลบ Slot นี้ใช่ไหม")) return;
+
+  state = await api(`/api/sheets/${selected.sheetId}/slots/${selected.slotId}`, {
+    method:"DELETE"
+  });
+  closeRemote();
+  toast("ลบแล้ว");
+  render();
+}
+
+async function addSheet(){
+  const title = prompt("ชื่อแผ่นใหม่", "New Sheet");
+  if(title === null) return;
+
+  state = await api("/api/sheets", {
+    method:"POST",
+    body:JSON.stringify({title:title})
+  });
+  activeSheetId = state.settings.active_sheet;
+  toast("เพิ่มแผ่นแล้ว");
+  render();
+}
+
+async function addSlot(){
+  const title = prompt("ชื่อ Slot ใหม่", "New Slot");
+  if(title === null) return;
+
+  state = await api(`/api/sheets/${activeSheetId}/slots`, {
+    method:"POST",
+    body:JSON.stringify({title:title, kind:"action"})
+  });
+  toast("เพิ่ม Slot แล้ว");
+  render();
+}
+
+async function copySheet(){
+  state = await api(`/api/sheets/${activeSheetId}/duplicate`, {
+    method:"POST",
+    body:"{}"
+  });
+  activeSheetId = state.settings.active_sheet;
+  toast("คัดลอกแผ่นแล้ว");
+  render();
+}
+
+function openViewer(slot){
+  const b = $("viewerBody");
+  b.innerHTML = slot.media_type === "video"
+    ? `<video src="${slot.media_url}" controls autoplay playsinline></video>`
+    : `<img src="${slot.media_url}">`;
+  $("viewer").classList.add("show");
+}
+
+function closeViewer(){
+  $("viewer").classList.remove("show");
+}
+
+$("addSheetBtn").addEventListener("click", addSheet);
+$("addSlotBtn").addEventListener("click", addSlot);
+$("copySheetBtn").addEventListener("click", copySheet);
+$("shareBtn").addEventListener("click", async ()=>{
+  try{
+    await navigator.clipboard.writeText(location.href);
+    toast("คัดลอกลิงก์แล้ว");
+  }catch(e){
+    prompt("Copy link", location.href);
+  }
+});
+$("back").addEventListener("click", closeRemote);
+$("closeBtn").addEventListener("click", closeRemote);
+$("saveBtn").addEventListener("click", saveSlot);
+$("uploadBtn").addEventListener("click", uploadFile);
+$("clearBtn").addEventListener("click", clearMedia);
+$("deleteBtn").addEventListener("click", deleteSlot);
+$("closeViewerBtn").addEventListener("click", closeViewer);
+$("viewer").addEventListener("click", e=>{
+  if(e.target.id === "viewer") closeViewer();
+});
+
+load().catch(e=>{
+  console.error(e);
+  toast("โหลดผิดพลาด");
+});
+</script>
+</body>
+</html>
+"""
+
+
+def simple_page(title, desc):
+    return f"""
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title}</title>
+<style>
+body{{margin:0;min-height:100vh;background:radial-gradient(circle at top,#2b1304,#050302 48%,#000);color:#fff7ef;font-family:system-ui;padding:18px}}
+.card{{max-width:720px;margin:30px auto;border:1px solid rgba(255,133,0,.35);border-radius:28px;background:rgba(18,9,5,.75);padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4)}}
+h1{{margin:0 0 10px;font-size:32px}}
+p{{color:#ffd7ad;line-height:1.55}}
+a{{display:inline-block;margin-top:16px;background:linear-gradient(135deg,#ffb000,#ff8500);color:#190700;text-decoration:none;border-radius:16px;padding:12px 16px;font-weight:900}}
+
+.remoteBtn{
+  position:absolute;
+  top:9px;
+  right:9px;
+  z-index:5;
+  border:1px solid rgba(255,176,0,.55);
+  background:rgba(0,0,0,.62);
+  color:#ffb000;
+  border-radius:999px;
+  width:38px;
+  height:38px;
+  font-size:18px;
+  font-weight:900;
+}
+
+</style>
+</head>
+<body>
+<div class="card">
+<h1>{title}</h1>
+<p>{desc}</p>
+<a href="/">← กลับ Remote</a>
+</div>
+</body>
+</html>
+"""
+
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return HTMLResponse(HTML)
+
+
+
+@app.get("/sheet/{sheet_id}", response_class=HTMLResponse)
+def open_sheet_page(sheet_id: str):
+    return HTMLResponse(HTML)
+
+@app.get("/creative", response_class=HTMLResponse)
+def creative():
+    return HTMLResponse(simple_page("Creative", "หน้านี้คือห้องสร้างแผ่นงาน ต่อไปจะใช้สร้าง Sheet / Card / Template จริง"))
+
+
+@app.get("/space", response_class=HTMLResponse)
+def space():
+    return HTMLResponse(simple_page("Space", "หน้านี้คือหน้าสาธารณะของเจ้าของ ID ต่อไปจะใช้โชว์ Zone / Shop / Gallery"))
+
+
+@app.get("/zone", response_class=HTMLResponse)
+def zone():
+    return HTMLResponse(simple_page("Zone", "หน้านี้คือโซน / ห้อง / ร้าน ต่อไปจะเชื่อมจาก Space เข้ามาที่นี่"))
+
+
+@app.get("/upload-room", response_class=HTMLResponse)
+def upload_room():
+    return HTMLResponse(simple_page("Upload Engine", "หน้านี้คือห้องอัปโหลด รูปและวิดีโอจริงเก็บใน uploads"))
+
+
+@app.get("/link-room", response_class=HTMLResponse)
+def link_room():
+    return HTMLResponse(simple_page("Link Engine", "หน้านี้คือห้องเชื่อมลิงก์ภายใน / ภายนอก"))
+
+
+@app.get("/setting-room", response_class=HTMLResponse)
+def setting_room():
+    return HTMLResponse(simple_page("Setting Engine", "หน้านี้คือห้องตั้งค่าระบบ Remote / Sheet / Slot"))
+
+
+@app.get("/health")
+def health():
+    return {"ok": True, "app": APP_NAME, "port": 7000}
+
+
+@app.get("/api/state")
+def api_state():
+    return JSONResponse(load_state())
+
+
+@app.post("/api/settings")
+def api_settings(p: SettingsPatch):
+    st = load_state()
+    data = dump_model(p)
+    for k, v in data.items():
+        if v is not None:
+            st["settings"][k] = v
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.post("/api/sheets")
+def api_add_sheet(p: SheetIn):
+    st = load_state()
+    sheet_id = uid("sheet")
+    title = p.title.strip() or "New Sheet"
+
+    sheet = {
+        "id": sheet_id,
+        "title": title,
+        "description": p.description.strip() or "แผ่นใหม่ของ INFINI Remote",
+        "order": len(st["sheets"]),
+        "created_at": now(),
+        "updated_at": now(),
+        "slots": [
+            {
+                "id": uid("slot"),
+                "title": "กลับ Remote หลัก",
+                "subtitle": "แตะเพื่อกลับหน้าแรก",
+                "kind": "link",
+                "media_url": "",
+                "media_type": "",
+                "link_url": "/",
+                "enabled": True,
+                "created_at": now(),
+                "updated_at": now(),
+            },
+            {
+                "id": uid("slot"),
+                "title": "ใส่หน้าปกแผ่นนี้",
+                "subtitle": "กด ⚙ เพื่ออัปโหลดรูปหรือวิดีโอ",
+                "kind": "upload",
+                "media_url": "",
+                "media_type": "",
+                "link_url": "",
+                "enabled": True,
+                "created_at": now(),
+                "updated_at": now(),
+            },
+            {
+                "id": uid("slot"),
+                "title": "ช่องต่อไป",
+                "subtitle": "กด ⚙ เพื่อตั้งลิงก์/รูป/วิดีโอ",
+                "kind": "action",
+                "media_url": "",
+                "media_type": "",
+                "link_url": "",
+                "enabled": True,
+                "created_at": now(),
+                "updated_at": now(),
+            },
+        ],
+    }
+
+    st["sheets"].append(sheet)
+
+    # สร้าง Slot ทางเข้าแผ่นใหม่บนหน้าแรก
+    home = st["sheets"][0]
+    home.setdefault("slots", [])
+    home["slots"].append({
+        "id": uid("slot"),
+        "title": title,
+        "subtitle": "แตะเข้าแผ่นนี้",
+        "kind": "sheet",
+        "media_url": "",
+        "media_type": "",
+        "link_url": f"/sheet/{sheet_id}",
+        "enabled": True,
+        "created_at": now(),
+        "updated_at": now(),
+    })
+    home["updated_at"] = now()
+
+    st["settings"]["active_sheet"] = sheet_id
+    save_state(st)
+    return JSONResponse(st)
+
+@app.post("/api/sheets/{sheet_id}/duplicate")
+def api_dup_sheet(sheet_id: str):
+    st = load_state()
+    old = find_sheet(st, sheet_id)
+    new = json.loads(json.dumps(old, ensure_ascii=False))
+    new["id"] = uid("sheet")
+    new["title"] = old.get("title", "Sheet") + " Copy"
+    new["order"] = len(st["sheets"])
+    new["created_at"] = now()
+    new["updated_at"] = now()
+    for sl in new.get("slots", []):
+        sl["id"] = uid("slot")
+    st["sheets"].append(new)
+    st["settings"]["active_sheet"] = new["id"]
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.post("/api/sheets/{sheet_id}/slots")
+def api_add_slot(sheet_id: str, p: SlotIn):
+    st = load_state()
+    s = find_sheet(st, sheet_id)
+    k = p.kind.strip() or "action"
+    sl = {
+        "id": uid("slot"),
+        "title": p.title.strip() or "New Slot",
+        "subtitle": p.subtitle.strip(),
+        "kind": k,
+        "media_url": "",
+        "media_type": "",
+        "link_url": DEFAULT_LINKS.get(k, ""),
+        "enabled": True,
+        "created_at": now(),
+        "updated_at": now(),
+    }
+    s["slots"].append(sl)
+    s["updated_at"] = now()
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.patch("/api/sheets/{sheet_id}/slots/{slot_id}")
+def api_patch_slot(sheet_id: str, slot_id: str, p: SlotPatch):
+    st = load_state()
+    s = find_sheet(st, sheet_id)
+    sl = find_slot(s, slot_id)
+    data = dump_model(p)
+    for k, v in data.items():
+        if k in ["title", "subtitle", "kind", "media_url", "media_type", "link_url", "enabled"]:
+            sl[k] = v
+    sl["updated_at"] = now()
+    s["updated_at"] = now()
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.delete("/api/sheets/{sheet_id}/slots/{slot_id}")
+def api_delete_slot(sheet_id: str, slot_id: str):
+    st = load_state()
+    s = find_sheet(st, sheet_id)
+    s["slots"] = [x for x in s["slots"] if x["id"] != slot_id]
+    s["updated_at"] = now()
+    save_state(st)
+    return JSONResponse(st)
+
+
+@app.post("/api/sheets/{sheet_id}/slots/{slot_id}/upload")
+def api_upload(sheet_id: str, slot_id: str, file: UploadFile = File(...)):
+    st = load_state()
+    s = find_sheet(st, sheet_id)
+    sl = find_slot(s, slot_id)
+
+    original = clean_name(file.filename)
+    ext = Path(original).suffix or ".bin"
+    name = f"{now()}_{uuid.uuid4().hex[:8]}{ext}"
+    dest = UPLOADS / name
+
+    with dest.open("wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    sl["media_url"] = f"/uploads/{name}"
+    sl["media_type"] = media_type(name, file.content_type or "")
+    sl["updated_at"] = now()
+    s["updated_at"] = now()
+
+    save_state(st)
+    return JSONResponse(st)

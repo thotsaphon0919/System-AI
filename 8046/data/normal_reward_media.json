@@ -1,0 +1,200 @@
+{
+  "rewards": {
+    "shoe": {
+      "stored_name": "shoe-cf446901185f.png",
+      "original_name": "1494.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 5265408
+    },
+    "watch": {
+      "stored_name": "watch-fbb7586db8f8.png",
+      "original_name": "1492.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 5541888
+    },
+    "bag": {
+      "stored_name": "bag-2812b68bf65f.png",
+      "original_name": "1411.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 3749888
+    },
+    "gift": {
+      "stored_name": "gift-c9ece884d8f7.png",
+      "original_name": "4107.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2033457
+    },
+    "vr": {
+      "stored_name": "vr-4eb57d5978a5.png",
+      "original_name": "4536.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2443209
+    },
+    "voucher": {
+      "stored_name": "voucher-dd01326c58c0.png",
+      "original_name": "4537.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2627843
+    },
+    "reward08": {
+      "stored_name": "reward08-0e46143f80df.jpg",
+      "original_name": "5399.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 557736
+    },
+    "reward10": {
+      "stored_name": "reward10-c3206328d51f.png",
+      "original_name": "4088.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2118110
+    },
+    "reward07": {
+      "stored_name": "reward07-5c17748ce44b.png",
+      "original_name": "1414.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 3676160
+    },
+    "reward09": {
+      "stored_name": "reward09-e26bc17cbb8a.png",
+      "original_name": "4107.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2033457
+    },
+    "reward11": {
+      "stored_name": "reward11-02de8591e573.png",
+      "original_name": "5057.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 4585472
+    },
+    "reward12": {
+      "stored_name": "reward12-1778195357a4.png",
+      "original_name": "4533.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2269469
+    },
+    "reward13": {
+      "stored_name": "reward13-8f264705cf7a.png",
+      "original_name": "4089.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1908686
+    },
+    "reward14": {
+      "stored_name": "reward14-89885da964f7.jpg",
+      "original_name": "1321.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 528610
+    },
+    "reward17": {
+      "stored_name": "reward17-d4bea51a49f9.png",
+      "original_name": "4434.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2462504
+    },
+    "reward15": {
+      "stored_name": "reward15-cd31ba19eb26.jpg",
+      "original_name": "1325.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 535718
+    },
+    "reward16": {
+      "stored_name": "reward16-00f3720c38b4.jpg",
+      "original_name": "1326.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 539011
+    },
+    "reward18": {
+      "stored_name": "reward18-165c83a53269.png",
+      "original_name": "7359.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2423947
+    },
+    "reward19": {
+      "stored_name": "reward19-72cf16d64a3e.png",
+      "original_name": "7360.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2215714
+    },
+    "reward20": {
+      "stored_name": "reward20-2bb6a8a1baaa.mp4",
+      "original_name": "7377.mp4",
+      "content_type": "video/mp4",
+      "kind": "video",
+      "size": 1516223
+    },
+    "basic01": {
+      "stored_name": "basic01-76da6925c2f6.jpg",
+      "original_name": "7807.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 527256
+    },
+    "basic02": {
+      "stored_name": "basic02-18e1676cef62.jpg",
+      "original_name": "7806.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 512687
+    },
+    "basic03": {
+      "stored_name": "basic03-7cac84efa27e.png",
+      "original_name": "7808.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2234879
+    },
+    "basic04": {
+      "stored_name": "basic04-bc0187429a28.png",
+      "original_name": "8410.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2047004
+    },
+    "basic05": {
+      "stored_name": "basic05-408b43eb6f46.png",
+      "original_name": "8411.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2116269
+    },
+    "basic06": {
+      "stored_name": "basic06-ff1e21d96670.png",
+      "original_name": "8409.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2120236
+    },
+    "basic08": {
+      "stored_name": "basic08-fb53315a2e9b.png",
+      "original_name": "8409.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2120236
+    },
+    "basic07": {
+      "stored_name": "basic07-5827220b0489.png",
+      "original_name": "8410.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2047004
+    }
+  }
+}

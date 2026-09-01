@@ -1,0 +1,1581 @@
+from fastapi import FastAPI, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+import uvicorn
+
+app = FastAPI(title="INFINI Point Tower")
+
+USER_POINTS = 12450
+
+STYLE = """
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:radial-gradient(circle at top,#231052,#050611 55%);
+ color:#fff;font-family:Arial,sans-serif
+}
+.wrap{max-width:1000px;margin:auto;padding:18px}
+header{
+ display:flex;justify-content:space-between;align-items:center;
+ padding:16px;border:1px solid #864aff;border-radius:18px;
+ background:#0d1022;margin-bottom:18px
+}
+.logo{font-size:22px;font-weight:bold;color:#b96cff}
+.points{color:#62dcff}
+.panel{
+ background:#0d1124;border:1px solid #7139c9;border-radius:18px;
+ padding:18px;margin-bottom:16px
+}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{
+ display:block;padding:18px;min-height:130px;border-radius:16px;
+ background:linear-gradient(145deg,#11162d,#221448);
+ border:1px solid #7d45db;color:white;text-decoration:none
+}
+.card:hover{box-shadow:0 0 20px #863fff}
+.card h3{margin:0 0 8px;color:#d8b8ff}
+.card p{color:#aaa6be}
+.btn{
+ display:inline-block;padding:13px 18px;background:#7432d7;
+ border:1px solid #aa71ff;border-radius:12px;color:white;
+ text-decoration:none;font-weight:bold
+}
+.btn.alt{background:transparent}
+.list{display:grid;gap:14px}
+.row{
+ display:grid;grid-template-columns:150px 1fr auto;
+ gap:14px;align-items:center
+}
+.placeholder{
+ min-height:100px;border-radius:12px;background:
+ linear-gradient(135deg,#301277,#071328);
+ display:grid;place-items:center;color:#c7a4ff
+}
+input,textarea,select{
+ width:100%;padding:13px;margin-bottom:10px;
+ border-radius:10px;border:1px solid #6738ae;
+ background:#080c19;color:white
+}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.summary div{text-align:center;padding:14px}
+nav{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.media{
+ min-height:65vh;display:grid;place-items:center;
+ background:#090c19;border:1px solid #6e3ac2;border-radius:18px;
+ font-size:28px;text-align:center;padding:20px
+}
+.controls{
+ display:grid;grid-template-columns:repeat(4,1fr);
+ gap:10px;margin-top:12px
+}
+@media(max-width:700px){
+ .grid{grid-template-columns:1fr}
+ .cols{grid-template-columns:1fr}
+ .row{grid-template-columns:100px 1fr}
+ .row .action{grid-column:1/-1}
+ .summary{grid-template-columns:1fr}
+}
+
+/* === AD MARKET CARD RIGHT FILL SAFE === */
+/* เติมพื้นที่ด้านขวาของการ์ดหมวดโฆษณา ไม่แตะระบบอัปโหลด */
+a.card[href^="/tower/ad-market/"] {
+  position: relative !important;
+  overflow: hidden !important;
+  min-height: 180px !important;
+  padding-right: 150px !important;
+}
+
+a.card[href^="/tower/ad-market/"]::before {
+  content: "";
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 104px;
+  height: 104px;
+  border-radius: 28px;
+  border: 1px solid rgba(190,110,255,.55);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(190,110,255,.9), transparent 28%),
+    radial-gradient(circle at 70% 75%, rgba(55,220,255,.45), transparent 30%),
+    linear-gradient(135deg, rgba(60,20,120,.85), rgba(5,8,25,.9));
+  box-shadow: 0 0 28px rgba(150,70,255,.55);
+  opacity: .95;
+}
+
+a.card[href^="/tower/ad-market/"]::after {
+  content: "AD";
+  position: absolute;
+  right: 42px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: white;
+  font-size: 26px;
+  font-weight: 1000;
+  letter-spacing: 1px;
+  text-shadow: 0 0 16px rgba(255,255,255,.65);
+}
+
+a.card[href="/tower/ad-market/tech"]::after {
+  content: "TECH";
+  font-size: 20px;
+  right: 35px;
+}
+
+a.card[href="/tower/ad-market/fashion"]::after {
+  content: "STYLE";
+  font-size: 18px;
+  right: 32px;
+}
+
+a.card[href="/tower/ad-market/auto"]::after {
+  content: "AUTO";
+  font-size: 20px;
+  right: 36px;
+}
+
+a.card[href="/tower/ad-market/food"]::after {
+  content: "FOOD";
+  font-size: 20px;
+  right: 36px;
+}
+
+
+
+
+
+
+
+</style>
+"""
+
+def page(title, content):
+    return HTMLResponse(f"""
+    <!doctype html>
+    <html lang="th">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>{title}</title>
+      {STYLE}
+    </head>
+    <body>
+      <div class="wrap">
+        <header>
+          <a href="/tower" class="logo">∞ INFINI POINT TOWER</a>
+          <div class="points">MY POINT {USER_POINTS:,} INF</div>
+        </header>
+        {content}
+      </div>
+    
+
+
+
+
+
+
+</body>
+    </html>
+    """)
+
+@app.get("/")
+def root():
+    return RedirectResponse("/tower")
+
+# หน้า 1
+@app.get("/tower")
+def tower():
+    return page("INFINI POINT TOWER", """
+    <style>
+      .tower-stats{
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:12px;
+        margin:18px 0 24px;
+      }
+      .tower-stat{
+        border:1px solid rgba(175,85,255,.55);
+        border-radius:20px;
+        padding:16px 14px;
+        background:
+          radial-gradient(circle at top right, rgba(145,75,255,.34), transparent 45%),
+          linear-gradient(135deg, rgba(18,13,48,.98), rgba(5,8,24,.98));
+        box-shadow:0 0 22px rgba(150,70,255,.24);
+      }
+      .tower-stat small{
+        display:block;
+        color:#b9a9d8;
+        font-size:12px;
+        letter-spacing:.08em;
+        margin-bottom:7px;
+      }
+      .tower-stat b{
+        display:block;
+        color:white;
+        font-size:22px;
+        line-height:1.15;
+      }
+      .tower-stat span{
+        display:block;
+        color:#73e8ff;
+        font-size:12px;
+        margin-top:5px;
+      }
+
+      .tower-note{
+        margin:0 0 24px;
+        border:1px solid rgba(70,255,170,.45);
+        border-radius:24px;
+        padding:18px;
+        color:#cffff0;
+        line-height:1.65;
+        background:
+          radial-gradient(circle at right, rgba(40,255,170,.16), transparent 42%),
+          linear-gradient(135deg, rgba(6,45,28,.55), rgba(10,18,35,.95));
+        box-shadow:0 0 20px rgba(60,255,170,.10);
+      }
+
+      .hero-tools{
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-top:16px;
+      }
+
+      .hero-upload-btn{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:44px;
+        padding:12px 16px;
+        border-radius:16px;
+        color:#ffffff;
+        font-weight:900;
+        text-decoration:none;
+        border:1px solid rgba(70,255,170,.42);
+        background:
+          radial-gradient(circle at top right, rgba(50,255,180,.18), transparent 40%),
+          linear-gradient(135deg, rgba(14,88,56,.98), rgba(10,25,22,.98));
+        box-shadow:0 0 18px rgba(50,255,180,.16);
+      }
+
+      .hero-upload-btn.secondary{
+        border:1px solid rgba(115,232,255,.35);
+        background:
+          radial-gradient(circle at top right, rgba(115,232,255,.18), transparent 40%),
+          linear-gradient(135deg, rgba(17,45,78,.98), rgba(10,16,30,.98));
+      }
+
+      .tower-card{
+        position:relative;
+        overflow:hidden;
+        min-height:245px;
+        padding-right:142px !important;
+        background:
+          radial-gradient(circle at 84% 42%, rgba(155,80,255,.28), transparent 34%),
+          linear-gradient(135deg, rgba(22,14,58,.98), rgba(8,10,26,.98)) !important;
+      }
+      .tower-card .orb{
+        position:absolute;
+        right:22px;
+        top:36px;
+        width:92px;
+        height:92px;
+        border-radius:28px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:#fff;
+        font-weight:1000;
+        font-size:28px;
+        border:1px solid rgba(200,120,255,.65);
+        background:
+          radial-gradient(circle at 34% 28%, rgba(210,115,255,.92), transparent 31%),
+          radial-gradient(circle at 72% 73%, rgba(65,226,255,.46), transparent 32%),
+          linear-gradient(135deg, rgba(48,22,105,.95), rgba(4,8,24,.98));
+        box-shadow:0 0 32px rgba(150,75,255,.55);
+      }
+      .tower-card ul{
+        list-style:none;
+        padding:0;
+        margin:16px 0 14px;
+        color:#ded6ee;
+        font-size:15px;
+        line-height:1.55;
+      }
+      .tower-card li{
+        margin:5px 0;
+      }
+      .tower-card li:before{
+        content:"✓";
+        color:#74eeff;
+        font-weight:900;
+        margin-right:8px;
+      }
+      .chips{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin:12px 0 16px;
+      }
+      .chip{
+        font-size:11px;
+        font-weight:900;
+        color:#eadcff;
+        padding:7px 10px;
+        border-radius:999px;
+        border:1px solid rgba(200,125,255,.45);
+        background:rgba(135,65,255,.16);
+      }
+      .cta{
+        display:inline-flex;
+        padding:12px 18px;
+        border-radius:16px;
+        color:#fff;
+        font-weight:900;
+        background:linear-gradient(135deg,#8735ff,#b85cff);
+        box-shadow:0 0 18px rgba(150,72,255,.42);
+      }
+
+      @media(max-width:560px){
+        .tower-stat{padding:14px 12px}
+        .tower-stat b{font-size:19px}
+        .tower-card{padding-right:118px !important}
+        .tower-card .orb{
+          right:16px;
+          width:78px;
+          height:78px;
+          font-size:22px;
+        }
+      }
+    </style>
+
+    <div class="panel">
+      <img src="/tower/header-image" onerror="this.style.display='none'"
+           style="width:100%;max-height:360px;object-fit:cover;border-radius:28px;margin-bottom:22px;border:1px solid rgba(120,255,190,.38);box-shadow:0 0 28px rgba(45,255,170,.14);">
+
+      <h1>INFINI POINT TOWER</h1>
+      <p>สะสมแต้ม สร้างแคมเปญ ชมโฆษณา แลกรางวัล และใช้การ์ดสิทธิ์กับร้านค้าพาร์ทเนอร์</p>
+
+      <form method="post" action="/tower/header-upload" enctype="multipart/form-data" style="margin-top:18px;display:flex;flex-direction:column;gap:12px;">
+        <input type="file" name="file" accept="image/*"
+               style="padding:14px;border-radius:16px;border:1px solid rgba(70,255,170,.38);background:#071018;color:#dffff4;font-weight:800;">
+        <button class="hero-upload-btn" type="submit" style="border:none;font-size:18px;">
+          บันทึกรูปช่องหัวข้อ
+        </button>
+        <a class="hero-upload-btn secondary" href="/tower/dashboard">เข้าหน้าหลักตึก</a>
+      </form>
+    </div>
+
+    <div class="tower-stats">
+      <div class="tower-stat">
+        <small>MY POINT</small>
+        <b>12,450 INF</b>
+        <span>พร้อมใช้ในระบบ</span>
+      </div>
+      <div class="tower-stat">
+        <small>CAMPAIGN</small>
+        <b>6 ACTIVE</b>
+        <span>แคมเปญเปิดอยู่</span>
+      </div>
+      <div class="tower-stat">
+        <small>REWARD CARD</small>
+        <b>120+</b>
+        <span>การ์ด/ของรางวัล</span>
+      </div>
+      <div class="tower-stat">
+        <small>PARTNER</small>
+        <b>28 SHOP</b>
+        <span>ร้านค้าพาร์ทเนอร์</span>
+      </div>
+    </div>
+
+    <div class="tower-note">
+      <b>POINT ECONOMY SYSTEM</b><br>
+      ดูแคมเปญ รับ INF แปลงเป็นการ์ด เก็บไว้ในกระเป๋า และนำไปแลกของจริงตามเงื่อนไขของระบบ
+    </div>
+
+    <div class="grid">
+      <a class="card tower-card" href="/tower/dashboard">
+        <div class="orb">∞</div>
+        <h3>ENTER TOWER</h3>
+        <p>เข้าสู่หน้าหลักของตึก</p>
+        <ul>
+          <li>ดูยอดแต้มและสถานะ</li>
+          <li>เข้า Wallet / Campaign / Reward</li>
+          <li>จัดการกิจกรรมในระบบ</li>
+        </ul>
+        <div class="chips">
+          <span class="chip">MEMBER ACCESS</span>
+          <span class="chip">DASHBOARD</span>
+          <span class="chip">WALLET</span>
+        </div>
+        <div class="cta">เข้าสู่ตึก</div>
+      </a>
+
+      <a class="card tower-card" href="/tower/ad-market">
+        <div class="orb" style="font-size:20px">INF</div>
+        <h3>HOW TO EARN</h3>
+        <p>เลือกชมโฆษณาและทำกิจกรรมเพื่อรับแต้ม</p>
+        <ul>
+          <li>เลือกหมวดที่สนใจ</li>
+          <li>ดูครบเวลาเพื่อรับ INF</li>
+          <li>ทำภารกิจเพื่อปลดล็อกการ์ด</li>
+        </ul>
+        <div class="chips">
+          <span class="chip">AD MARKET</span>
+          <span class="chip">MISSION</span>
+          <span class="chip">EARN INF</span>
+        </div>
+        <div class="cta">เริ่มรับแต้ม</div>
+      </a>
+
+      <a class="card tower-card" href="/tower/rewards">
+        <div class="orb">★</div>
+        <h3>REDEEM REWARDS</h3>
+        <p>เลือกและแลกของรางวัลจากระบบและร้านค้า</p>
+        <ul>
+          <li>ของใช้ประจำวัน</li>
+          <li>ของพรีเมียม / Limited</li>
+          <li>เก็บการ์ดไว้ใช้ภายหลังได้</li>
+        </ul>
+        <div class="chips">
+          <span class="chip">REWARD CARD</span>
+          <span class="chip">PARTNER SHOP</span>
+          <span class="chip">REDEEM</span>
+        </div>
+        <div class="cta">ดูของรางวัล</div>
+      </a>
+    </div>
+    """)
+
+
+
+# หน้า 2
+@app.get("/tower/dashboard")
+def dashboard():
+    return page("Dashboard", """
+    <style>
+      .dash-hero{
+        border:1px solid rgba(170,85,255,.6);
+        border-radius:28px;
+        padding:30px 28px;
+        margin-bottom:22px;
+        background:
+          radial-gradient(circle at 88% 35%, rgba(155,70,255,.30), transparent 32%),
+          linear-gradient(135deg, rgba(12,15,42,.98), rgba(8,9,24,.98));
+        box-shadow:0 0 26px rgba(145,70,255,.18);
+      }
+      .dash-hero h1{
+        margin:0 0 16px;
+        font-size:46px;
+        line-height:1.08;
+      }
+      .dash-hero p{
+        color:#ddd6ea;
+        line-height:1.65;
+        margin:0;
+      }
+
+      .dash-stats{
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:12px;
+        margin:20px 0 24px;
+      }
+      .dash-stat{
+        border:1px solid rgba(120,255,195,.42);
+        border-radius:20px;
+        padding:15px 14px;
+        background:
+          radial-gradient(circle at top right, rgba(45,255,170,.18), transparent 42%),
+          linear-gradient(135deg, rgba(6,35,28,.74), rgba(9,10,28,.98));
+      }
+      .dash-stat small{
+        display:block;
+        color:#9debd5;
+        font-size:12px;
+        letter-spacing:.08em;
+        margin-bottom:7px;
+      }
+      .dash-stat b{
+        display:block;
+        color:white;
+        font-size:22px;
+      }
+
+      .dash-note{
+        border:1px solid rgba(70,255,170,.45);
+        border-radius:24px;
+        padding:18px;
+        margin:0 0 24px;
+        color:#d8fff1;
+        line-height:1.65;
+        background:
+          radial-gradient(circle at right, rgba(40,255,170,.14), transparent 42%),
+          linear-gradient(135deg, rgba(6,45,28,.55), rgba(10,18,35,.95));
+      }
+
+      .dash-grid{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:18px;
+      }
+
+      .dash-card{
+        position:relative;
+        display:block;
+        overflow:hidden;
+        min-height:230px;
+        padding:26px 128px 24px 24px !important;
+        text-decoration:none;
+        color:inherit;
+        border:1px solid rgba(170,85,255,.62);
+        border-radius:26px;
+        background:
+          radial-gradient(circle at 84% 42%, rgba(150,70,255,.30), transparent 35%),
+          linear-gradient(135deg, rgba(25,14,62,.98), rgba(8,10,26,.98));
+        box-shadow:0 0 22px rgba(145,70,255,.16);
+      }
+
+      .dash-card h3{
+        margin:0 0 10px;
+        font-size:28px;
+        color:#e4c3ff;
+      }
+      .dash-card p{
+        color:#cfc8df;
+        margin:0 0 14px;
+        line-height:1.55;
+      }
+      .dash-card ul{
+        list-style:none;
+        padding:0;
+        margin:12px 0 14px;
+        color:#e8e2f2;
+        font-size:15px;
+        line-height:1.55;
+      }
+      .dash-card li{
+        margin:5px 0;
+      }
+      .dash-card li:before{
+        content:"✓";
+        color:#72f0ff;
+        margin-right:8px;
+        font-weight:900;
+      }
+
+      .dash-orb{
+        position:absolute;
+        right:20px;
+        top:34px;
+        width:84px;
+        height:84px;
+        border-radius:26px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:#fff;
+        font-weight:1000;
+        font-size:25px;
+        border:1px solid rgba(200,120,255,.65);
+        background:
+          radial-gradient(circle at 34% 28%, rgba(210,115,255,.9), transparent 30%),
+          radial-gradient(circle at 72% 73%, rgba(65,226,255,.46), transparent 32%),
+          linear-gradient(135deg, rgba(48,22,105,.95), rgba(4,8,24,.98));
+        box-shadow:0 0 30px rgba(150,75,255,.50);
+      }
+
+      .dash-chips{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin:12px 0 16px;
+      }
+      .dash-chip{
+        font-size:11px;
+        font-weight:900;
+        color:#eaddff;
+        padding:7px 10px;
+        border-radius:999px;
+        border:1px solid rgba(200,125,255,.42);
+        background:rgba(135,65,255,.15);
+      }
+
+      .dash-cta{
+        display:inline-flex;
+        padding:12px 18px;
+        border-radius:16px;
+        color:#fff;
+        font-weight:900;
+        background:linear-gradient(135deg,#8735ff,#b85cff);
+        box-shadow:0 0 18px rgba(150,72,255,.42);
+      }
+
+      @media(max-width:560px){
+        .dash-hero h1{font-size:42px}
+        .dash-card{
+          padding-right:112px !important;
+          min-height:235px;
+        }
+        .dash-orb{
+          right:16px;
+          width:76px;
+          height:76px;
+          font-size:22px;
+        }
+      }
+    </style>
+
+    <div class="dash-hero">
+      <h1>Point Tower<br>Dashboard</h1>
+      <p>ศูนย์ควบคุมแต้ม แคมเปญ โฆษณา การ์ดรางวัล และประวัติการใช้งานของ INFINI</p>
+    </div>
+
+    <div class="dash-stats">
+      <div class="dash-stat">
+        <small>WALLET</small>
+        <b>12,450 INF</b>
+      </div>
+      <div class="dash-stat">
+        <small>ACTIVE</small>
+        <b>6 CAMPAIGN</b>
+      </div>
+      <div class="dash-stat">
+        <small>REWARD</small>
+        <b>120+ CARD</b>
+      </div>
+      <div class="dash-stat">
+        <small>STATUS</small>
+        <b>READY</b>
+      </div>
+    </div>
+
+    <div class="dash-note">
+      <b>CONTROL CENTER</b><br>
+      เลือกทำรายการหลักของตึก ดูโฆษณา รับแต้ม สร้างแคมเปญ แลกของรางวัล และตรวจประวัติทั้งหมดในที่เดียว
+    </div>
+
+    <div class="dash-grid">
+
+      <a class="dash-card" href="/tower/transaction?type=buy-point">
+        <div class="dash-orb">INF</div>
+        <h3>ซื้อแต้ม</h3>
+        <p>เข้าสู่ห้องธุรกรรมเพื่อเติมแต้มเข้าระบบ</p>
+        <ul>
+          <li>เติม INF สำหรับใช้งาน</li>
+          <li>ใช้กับแคมเปญและการ์ด</li>
+          <li>ตรวจรายการย้อนหลังได้</li>
+        </ul>
+        <div class="dash-chips">
+          <span class="dash-chip">BUY POINT</span>
+          <span class="dash-chip">WALLET</span>
+        </div>
+        <div class="dash-cta">เข้าสู่ธุรกรรม</div>
+      </a>
+
+      <a class="dash-card" href="/tower/transaction?type=create-campaign">
+        <div class="dash-orb">AD</div>
+        <h3>สร้างแคมเปญ</h3>
+        <p>อัปโหลดสื่อ ตั้งค่าแคมเปญ และกำหนดกิจกรรม</p>
+        <ul>
+          <li>กำหนดงบและแต้มต่อผู้ชม</li>
+          <li>ผูกกับ Reward Card ได้</li>
+          <li>ใช้เป็นทางเดินแทนการยิงแอดมั่ว</li>
+        </ul>
+        <div class="dash-chips">
+          <span class="dash-chip">CAMPAIGN</span>
+          <span class="dash-chip">TARGET</span>
+        </div>
+        <div class="dash-cta">เริ่มสร้าง</div>
+      </a>
+
+      <a class="dash-card" href="/tower/ad-market">
+        <div class="dash-orb">▶</div>
+        <h3>เลือกชมโฆษณา</h3>
+        <p>เลือกหมวดและรับแต้มจากแคมเปญที่สนใจ</p>
+        <ul>
+          <li>ดูครบเวลาเพื่อรับ INF</li>
+          <li>เลือกหมวดตามความสนใจ</li>
+          <li>ต่อยอดเป็นภารกิจและการ์ดได้</li>
+        </ul>
+        <div class="dash-chips">
+          <span class="dash-chip">AD MARKET</span>
+          <span class="dash-chip">EARN</span>
+        </div>
+        <div class="dash-cta">ไป AD Market</div>
+      </a>
+
+      <a class="dash-card" href="/tower/rewards">
+        <div class="dash-orb">★</div>
+        <h3>แลกรางวัล</h3>
+        <p>เลือกของรางวัล การ์ดสิทธิ์ และดีลจากร้านค้าพาร์ทเนอร์</p>
+        <ul>
+          <li>ของใช้ประจำวัน</li>
+          <li>ของพรีเมียม / Limited</li>
+          <li>เก็บการ์ดไว้ใช้ภายหลังได้</li>
+        </ul>
+        <div class="dash-chips">
+          <span class="dash-chip">REWARD</span>
+          <span class="dash-chip">CARD</span>
+          <span class="dash-chip">PARTNER</span>
+        </div>
+        <div class="dash-cta">ดูของรางวัล</div>
+      </a>
+
+      <a class="dash-card" href="/tower/transaction?type=history">
+        <div class="dash-orb">⌁</div>
+        <h3>ประวัติ</h3>
+        <p>ดูรายการย้อนหลัง การรับแต้ม การใช้แต้ม และการแลกการ์ด</p>
+        <ul>
+          <li>ตรวจการใช้ INF</li>
+          <li>ดูสถานะการ์ด</li>
+          <li>ติดตามกิจกรรมที่ผ่านมา</li>
+        </ul>
+        <div class="dash-chips">
+          <span class="dash-chip">HISTORY</span>
+          <span class="dash-chip">TRACKING</span>
+        </div>
+        <div class="dash-cta">ดูประวัติ</div>
+      </a>
+
+    </div>
+    """)
+
+
+
+@app.get("/tower/rewards")
+def rewards():
+    cards = ""
+
+    for rid, name, cost, stock in REWARD_ITEMS:
+        cards += f"""
+        <div class="panel card" style="overflow:hidden">
+            <a href="/tower/redeem/{rid}"
+               style="text-decoration:none;color:inherit;display:block">
+                {normal_reward_media_html(rid)}
+                <h3>{name}</h3>
+                <p>เหลือ {stock} ชิ้น</p>
+                <strong style="color:#ffd66d">{cost:,} INF</strong>
+            </a>
+
+            <br><br>
+
+            <a class="btn" href="/tower/redeem/{rid}">
+                ดูรายละเอียด
+            </a>
+        </div>
+        """
+
+    return page("แลกรางวัล", f"""
+    <div class="panel">
+        <h1>แลกรางวัลพิเศษ</h1>
+        <p>เลือกของรางวัลที่ต้องการ</p>
+    </div>
+
+    <div class="grid">
+        {cards}
+    </div>
+    """)
+
+# หน้ารูปใหญ่และรายละเอียดของแต่ละช่อง
+@app.get("/tower/redeem/{reward_id}")
+def redeem_form(reward_id: str):
+    item = get_reward_item(reward_id)
+
+    if item is None:
+        return page("ไม่พบรางวัล", """
+        <div class="panel">
+            <h1>ไม่พบรางวัลนี้</h1>
+            <a class="btn" href="/tower/rewards">กลับหน้ารางวัล</a>
+        </div>
+        """)
+
+    rid, name, cost, stock = item
+    remaining = USER_POINTS - cost
+
+    return page("ยืนยันการแลก", f"""
+    <div class="panel">
+        <h1>ยืนยันการแลกของรางวัล</h1>
+        <p>รหัสรางวัล: {rid}</p>
+    </div>
+
+    <div class="cols">
+        <div class="panel">
+            {normal_reward_media_html(rid, large=True)}
+
+            <a class="btn"
+               href="/normal-reward-upload/{rid}?back_url=/tower/redeem/{rid}">
+                อัปโหลดหรือเปลี่ยนรูป
+            </a>
+
+            <h2>{name}</h2>
+            <p>จำนวนคงเหลือ: {stock} ชิ้น</p>
+            <p>ใช้แต้ม: <strong style="color:#ffd66d">{cost:,} INF</strong></p>
+        </div>
+
+        <div class="panel">
+            <div class="summary">
+                <div class="panel">
+                    ก่อนแลก<br>
+                    <strong>{USER_POINTS:,} INF</strong>
+                </div>
+
+                <div class="panel">
+                    ใช้<br>
+                    <strong>{cost:,} INF</strong>
+                </div>
+
+                <div class="panel">
+                    คงเหลือ<br>
+                    <strong>{remaining:,} INF</strong>
+                </div>
+            </div>
+
+            <form method="post" action="/tower/redeem/{reward_id}">
+                <input
+                    name="recipient_name"
+                    placeholder="ชื่อ-นามสกุลผู้รับ"
+                    required
+                >
+
+                <input
+                    name="phone"
+                    placeholder="เบอร์โทรศัพท์"
+                    required
+                >
+
+                <input
+                    name="email"
+                    type="email"
+                    placeholder="อีเมล"
+                    required
+                >
+
+                <textarea
+                    name="address"
+                    placeholder="ที่อยู่จัดส่ง"
+                ></textarea>
+
+                <textarea
+                    name="note"
+                    placeholder="หมายเหตุเพิ่มเติม"
+                ></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="accept"
+                        required
+                        style="width:auto"
+                    >
+                    ยอมรับเงื่อนไขการแลก
+                </label>
+
+                <br><br>
+
+                <button class="btn" type="submit">
+                    ยืนยันการแลก
+                </button>
+            </form>
+        </div>
+    </div>
+    """)
+
+@app.post("/tower/redeem/{reward_id}")
+def redeem_submit(
+    reward_id: str,
+    recipient_name: str = Form(...),
+    phone: str = Form(...),
+    email: str = Form(...),
+    address: str = Form(""),
+    note: str = Form(""),
+    accept: str = Form(...)
+):
+    return RedirectResponse(
+      f"/tower/success?reward={reward_id}",
+      status_code=303
+    )
+
+# หน้าสำเร็จ
+@app.get("/tower/success")
+def success(reward: str):
+    return page("สำเร็จ", f"""
+    <div class="panel" style="text-align:center;padding:50px">
+      <h1>ทำรายการสำเร็จ</h1>
+      <p>รางวัล: {reward}</p>
+      <p>เลขธุรกรรม: TX-INFINI-0001</p>
+      <p>
+        ตอนนี้เป็นข้อมูลจำลอง<br>
+        ระบบหักแต้มและลดจำนวนจริงค่อยเชื่อมภายหลัง
+      </p>
+      <a class="btn" href="/tower/dashboard">
+        กลับ Point Tower
+      </a>
+    </div>
+    """)
+
+from fastapi import File, UploadFile
+from pathlib import Path
+import shutil
+import uuid
+
+
+CONTROL_UPLOAD_DIR = Path.home() / "downloads" / "infini_point_tower" / "uploads"
+CONTROL_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@app.get("/tower/control-room")
+def control_room():
+    return page("INFINI Point Tower Control Room", """
+    <div class="panel">
+      <h1>∞ INFINI POINT TOWER CONTROL ROOM</h1>
+      <p>
+        อัปโหลด จัดหมวด ตั้งค่า และเชื่อมไปยังหน้าที่ต้องการ
+      </p>
+    </div>
+
+    <form method="post"
+          action="/tower/control-room"
+          enctype="multipart/form-data">
+
+      <!-- 1. เลือกปลายทาง -->
+      <div class="panel">
+        <h2>1. เลือกปลายทาง</h2>
+        <p>เลือกหน้าที่ต้องการส่งข้อมูลไปแสดง</p>
+
+        <select name="destination"
+                id="destination"
+                onchange="changeControlFields()"
+                required>
+          <option value="">— เลือกหน้าปลายทาง —</option>
+          <option value="tower">หน้าแรก Point Tower</option>
+          <option value="dashboard">Dashboard</option>
+          <option value="ad-market">AD Market</option>
+          <option value="ad-list">รายการโฆษณา</option>
+          <option value="ad-view">หน้าดูโฆษณา</option>
+          <option value="reward">หน้าแลกรางวัล</option>
+          <option value="campaign">หน้าแคมเปญ</option>
+        </select>
+      </div>
+
+      <div class="cols">
+
+        <div>
+          <!-- 2. อัปโหลดสื่อ -->
+          <div class="panel">
+            <h2>2. อัปโหลดสื่อ</h2>
+
+            <select name="media_type" required>
+              <option value="image">รูปภาพ</option>
+              <option value="video">วิดีโอ</option>
+              <option value="cover">ภาพปก</option>
+              <option value="banner">แบนเนอร์</option>
+            </select>
+
+            <input type="file"
+                   name="media"
+                   id="mediaInput"
+                   accept="image/*,video/*"
+                   onchange="previewMedia(event)"
+                   required>
+
+            <div id="uploadPreview"
+                 class="placeholder"
+                 style="min-height:220px">
+              ตัวอย่างรูปหรือวิดีโอ
+            </div>
+          </div>
+
+          <!-- 3. ข้อมูลหลัก -->
+          <div class="panel">
+            <h2>3. ข้อมูลหลัก</h2>
+
+            <label>ชื่อรายการ</label>
+            <input name="title"
+                   id="titleInput"
+                   placeholder="ชื่อโฆษณา รางวัล หรือแคมเปญ"
+                   oninput="updatePreview()"
+                   required>
+
+            <label>หัวข้อ</label>
+            <input name="headline"
+                   placeholder="ข้อความหัวเรื่อง">
+
+            <label>คำอธิบาย</label>
+            <textarea name="description"
+                      id="descriptionInput"
+                      placeholder="รายละเอียดของรายการ"
+                      oninput="updatePreview()"></textarea>
+
+            <label>หมวดหรือโซน</label>
+            <select name="category">
+              <option value="everything">Everything</option>
+              <option value="tech">Tech &amp; Gadget</option>
+              <option value="fashion">Fashion</option>
+              <option value="auto">Auto &amp; Vehicle</option>
+              <option value="food">Food &amp; Drink</option>
+              <option value="game">Game &amp; Entertainment</option>
+              <option value="finance">Finance &amp; Investment</option>
+              <option value="health">Health &amp; Beauty</option>
+              <option value="travel">Travel &amp; Hotel</option>
+              <option value="real-estate">Real Estate</option>
+              <option value="education">Education</option>
+              <option value="lifestyle">Lifestyle</option>
+            </select>
+
+            <label>สถานะ</label>
+            <select name="status">
+              <option value="draft">ฉบับร่าง</option>
+              <option value="review">รอตรวจสอบ</option>
+              <option value="active">เผยแพร่</option>
+              <option value="closed">ปิดรายการ</option>
+            </select>
+          </div>
+
+          <!-- 4A. ข้อมูลโฆษณา -->
+          <div class="panel"
+               id="adFields"
+               style="display:none">
+            <h2>4. ข้อมูลเฉพาะโฆษณา</h2>
+
+            <label>แต้มที่ใช้สร้างแคมเปญ</label>
+            <input type="number"
+                   name="campaign_points"
+                   min="0"
+                   value="0">
+
+            <label>แต้มที่ผู้ชมได้รับ</label>
+            <input type="number"
+                   name="viewer_reward"
+                   min="0"
+                   value="0">
+
+            <label>งบหรือแต้มคงเหลือ</label>
+            <input type="number"
+                   name="budget_left"
+                   min="0"
+                   value="0">
+
+            <label>เวลาที่ต้องดู</label>
+            <select name="watch_seconds">
+              <option value="15">15 วินาที</option>
+              <option value="30">30 วินาที</option>
+              <option value="60">1 นาที</option>
+              <option value="120">2 นาที</option>
+            </select>
+
+            <label>ลิงก์ปลายทาง</label>
+            <input type="url"
+                   name="target_url"
+                   placeholder="https://...">
+          </div>
+
+          <!-- 4B. ข้อมูลรางวัล -->
+          <div class="panel"
+               id="rewardFields"
+               style="display:none">
+            <h2>4. ข้อมูลเฉพาะของรางวัล</h2>
+
+            <label>แต้มที่ใช้แลก</label>
+            <input type="number"
+                   name="reward_cost"
+                   id="rewardCost"
+                   min="0"
+                   value="0"
+                   oninput="updatePointSummary()">
+
+            <label>จำนวนของคงเหลือ</label>
+            <input type="number"
+                   name="reward_stock"
+                   min="0"
+                   value="0">
+
+            <label>ประเภทของรางวัล</label>
+            <select name="reward_type">
+              <option value="physical">สินค้าจริง</option>
+              <option value="digital">ดิจิทัล</option>
+              <option value="voucher">คูปอง</option>
+              <option value="experience">ประสบการณ์</option>
+            </select>
+
+            <label>วิธีรับของ</label>
+            <select name="delivery_method">
+              <option value="shipping">จัดส่งถึงที่อยู่</option>
+              <option value="email">ส่งทางอีเมล</option>
+              <option value="pickup">รับด้วยตนเอง</option>
+            </select>
+
+            <label>เงื่อนไขการแลก</label>
+            <textarea name="reward_terms"
+                      placeholder="ระบุเงื่อนไขของรางวัล"></textarea>
+          </div>
+
+          <!-- 4C. ข้อมูลแคมเปญ -->
+          <div class="panel"
+               id="campaignFields"
+               style="display:none">
+            <h2>4. ข้อมูลเฉพาะแคมเปญ</h2>
+
+            <label>งบแคมเปญ</label>
+            <input type="number"
+                   name="campaign_budget"
+                   min="0"
+                   value="0">
+
+            <label>วันเริ่มต้น</label>
+            <input type="date"
+                   name="start_date">
+
+            <label>วันสิ้นสุด</label>
+            <input type="date"
+                   name="end_date">
+
+            <label>กลุ่มเป้าหมาย</label>
+            <input name="target_audience"
+                   placeholder="เช่น ผู้สนใจเทคโนโลยี อายุ 18–35 ปี">
+          </div>
+        </div>
+
+        <!-- 5. ตัวอย่าง -->
+        <div>
+          <div class="panel"
+               style="position:sticky;top:14px">
+            <h2>5. ตัวอย่างก่อนเผยแพร่</h2>
+
+            <div class="panel">
+              <div id="cardPreview"
+                   class="placeholder"
+                   style="min-height:320px">
+                ตัวอย่างสื่อ
+              </div>
+
+              <h2 id="previewTitle"
+                  style="margin-top:18px">
+                ชื่อรายการ
+              </h2>
+
+              <p id="previewDescription">
+                รายละเอียดจะแสดงตรงนี้
+              </p>
+
+              <a class="btn"
+                 style="width:100%;text-align:center">
+                ดูรายการ
+              </a>
+            </div>
+
+            <div class="panel">
+              <h3>สรุปการใช้แต้ม</h3>
+
+              <p>
+                แต้มคงเหลือปัจจุบัน
+                <strong style="float:right">
+                  12,450 INF
+                </strong>
+              </p>
+
+              <p>
+                แต้มที่ใช้
+                <strong id="previewCost"
+                        style="float:right;color:#ff6978">
+                  0 INF
+                </strong>
+              </p>
+
+              <p>
+                แต้มคงเหลือหลังทำรายการ
+                <strong id="previewRemaining"
+                        style="float:right;color:#63f5a5">
+                  12,450 INF
+                </strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. ปุ่มควบคุม -->
+      <div class="panel">
+        <h2>6. ปุ่มควบคุม</h2>
+
+        <div class="grid">
+          <button class="btn alt"
+                  type="submit"
+                  name="action"
+                  value="draft">
+            บันทึกฉบับร่าง
+          </button>
+
+          <button class="btn alt"
+                  type="button"
+                  onclick="window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                  })">
+            ดูตัวอย่าง
+          </button>
+
+          <button class="btn"
+                  type="submit"
+                  name="action"
+                  value="publish">
+            อัปโหลดและเผยแพร่
+          </button>
+
+          <a class="btn alt"
+             href="/tower/transaction?type=control-room">
+            ห้องธุรกรรม
+          </a>
+
+          <a class="btn alt"
+             href="/tower/dashboard">
+            กลับ Dashboard
+          </a>
+        </div>
+      </div>
+    </form>
+
+    <script>
+      function changeControlFields() {
+        const value =
+          document.getElementById("destination").value;
+
+        const adFields =
+          document.getElementById("adFields");
+
+        const rewardFields =
+          document.getElementById("rewardFields");
+
+        const campaignFields =
+          document.getElementById("campaignFields");
+
+        adFields.style.display = "none";
+        rewardFields.style.display = "none";
+        campaignFields.style.display = "none";
+
+        if (
+          value === "ad-market" ||
+          value === "ad-list" ||
+          value === "ad-view"
+        ) {
+          adFields.style.display = "block";
+        }
+
+        if (value === "reward") {
+          rewardFields.style.display = "block";
+        }
+
+        if (value === "campaign") {
+          campaignFields.style.display = "block";
+        }
+      }
+
+      function previewMedia(event) {
+        const file = event.target.files[0];
+
+        if (!file) {
+          return;
+        }
+
+        const url = URL.createObjectURL(file);
+
+        const uploadPreview =
+          document.getElementById("uploadPreview");
+
+        const cardPreview =
+          document.getElementById("cardPreview");
+
+        if (file.type.startsWith("video/")) {
+          uploadPreview.innerHTML =
+            '<video controls style="width:100%;' +
+            'max-height:260px;border-radius:12px">' +
+            '<source src="' + url + '">' +
+            '</video>';
+
+          cardPreview.innerHTML =
+            '<video controls style="width:100%;' +
+            'max-height:320px;border-radius:12px">' +
+            '<source src="' + url + '">' +
+            '</video>';
+        } else {
+          uploadPreview.innerHTML =
+            '<img src="' + url + '" ' +
+            'style="width:100%;max-height:260px;' +
+            'object-fit:contain;background:#050611;border-radius:12px">';
+
+          cardPreview.innerHTML =
+            '<img src="' + url + '" ' +
+            'style="width:100%;max-height:320px;' +
+            'object-fit:contain;background:#050611;border-radius:12px">';
+        }
+      }
+
+      function updatePreview() {
+        const title =
+          document.getElementById("titleInput").value;
+
+        const description =
+          document.getElementById(
+            "descriptionInput"
+          ).value;
+
+        document.getElementById(
+          "previewTitle"
+        ).textContent = title || "ชื่อรายการ";
+
+        document.getElementById(
+          "previewDescription"
+        ).textContent =
+          description || "รายละเอียดจะแสดงตรงนี้";
+      }
+
+      function updatePointSummary() {
+        const cost =
+          Number(
+            document.getElementById(
+              "rewardCost"
+            ).value || 0
+          );
+
+        const currentPoints = 12450;
+        const remaining =
+          Math.max(0, currentPoints - cost);
+
+        document.getElementById(
+          "previewCost"
+        ).textContent =
+          cost.toLocaleString() + " INF";
+
+        document.getElementById(
+          "previewRemaining"
+        ).textContent =
+          remaining.toLocaleString() + " INF";
+      }
+    </script>
+    """)
+
+
+@app.post("/tower/control-room")
+async def control_room_submit(
+    destination: str = Form(...),
+    media_type: str = Form(...),
+    media: UploadFile = File(...),
+
+    title: str = Form(...),
+    headline: str = Form(""),
+    description: str = Form(""),
+    category: str = Form("everything"),
+    status: str = Form("draft"),
+
+    campaign_points: int = Form(0),
+    viewer_reward: int = Form(0),
+    budget_left: int = Form(0),
+    watch_seconds: int = Form(30),
+    target_url: str = Form(""),
+
+    reward_cost: int = Form(0),
+    reward_stock: int = Form(0),
+    reward_type: str = Form("physical"),
+    delivery_method: str = Form("shipping"),
+    reward_terms: str = Form(""),
+
+    campaign_budget: int = Form(0),
+    start_date: str = Form(""),
+    end_date: str = Form(""),
+    target_audience: str = Form(""),
+
+    action: str = Form("draft")
+):
+    extension = Path(
+        media.filename or "upload.bin"
+    ).suffix.lower()
+
+    allowed_extensions = {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".gif",
+        ".mp4",
+        ".mov",
+        ".webm"
+    }
+
+    if extension not in allowed_extensions:
+        return page(
+            "อัปโหลดไม่สำเร็จ",
+            """
+            <div class="panel">
+              <h1>ชนิดไฟล์ไม่รองรับ</h1>
+              <p>
+                รองรับ JPG, PNG, WEBP, GIF,
+                MP4, MOV และ WEBM
+              </p>
+              <a class="btn"
+                 href="/tower/control-room">
+                กลับห้องควบคุม
+              </a>
+            </div>
+            """
+        )
+
+    safe_filename = (
+        uuid.uuid4().hex + extension
+    )
+
+    file_path = (
+        CONTROL_UPLOAD_DIR / safe_filename
+    )
+
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(
+            media.file,
+            buffer
+        )
+
+    if action == "draft":
+        return RedirectResponse(
+            "/tower/transaction"
+            "?type=control-draft"
+            f"&ref={safe_filename}",
+            status_code=303
+        )
+
+    if destination == "tower":
+        target = "/tower"
+
+    elif destination == "dashboard":
+        target = "/tower/dashboard"
+
+    elif destination == "reward":
+        target = "/tower/rewards"
+
+    elif destination == "campaign":
+        target = (
+            "/tower/transaction"
+            "?type=campaign"
+            f"&ref={safe_filename}"
+        )
+
+    elif destination in {
+        "ad-market",
+        "ad-list",
+        "ad-view"
+    }:
+        target = (
+            f"/tower/ad-market/"
+            f"{category or 'everything'}"
+        )
+
+    else:
+        target = "/tower/dashboard"
+
+    return RedirectResponse(
+        target,
+        status_code=303
+    )
+
+# เพิ่มแผงอัปโหลดรูปหน้าแรก Point Tower
+from home_upload_panel import setup_home_upload_panel
+setup_home_upload_panel(app)
+
+
+from dashboard_upload_panel import setup_dashboard_upload_panel
+setup_dashboard_upload_panel(app)
+
+
+from ad_market_upload_panel import setup_ad_market_upload_panel
+setup_ad_market_upload_panel(app)
+
+if __name__ == "__main__":
+    uvicorn.run(
+      "main:app",
+      host="0.0.0.0",
+      port=8046,
+      reload=True
+    )
+
+from video_ad_upload import setup_video_upload
+setup_video_upload(app)
+
+from member_home import setup_member_home
+setup_member_home(app)
+
+from reward_images import setup_reward_images
+setup_reward_images(app)
+
+from normal_reward_images import setup_normal_reward_images, _media_block as _normal_reward_media_block
+setup_normal_reward_images(app)
+
+# === REWARD MEDIA COMPAT WRAPPER ===
+# ใช้ normal reward media เป็นระบบหลัก แต่รับ argument เก่าได้ด้วย
+def normal_reward_media_html(reward_id, *args, **kwargs):
+    detail = bool(kwargs.get("detail", False))
+    try:
+        return _normal_reward_media_block(str(reward_id), detail=detail)
+    except TypeError:
+        return _normal_reward_media_block(str(reward_id))
+
+
+
+from normal_ad_images import setup_normal_ad_images, _media_block as _normal_ad_media_block
+setup_normal_ad_images(app)
+
+# === NORMAL AD MEDIA DISPLAY WRAPPER ===
+def normal_ad_media_html(ad_id, *args, **kwargs):
+    detail = bool(kwargs.get("detail", False))
+    try:
+        return _normal_ad_media_block(str(ad_id), detail=detail)
+    except TypeError:
+        return _normal_ad_media_block(str(ad_id))
+
+
+# === TOWER HEADER REAL UPLOAD PATCH ===
+from pathlib import Path as _TowerPath
+from fastapi import UploadFile as _TowerUploadFile, File as _TowerFile
+from fastapi.responses import RedirectResponse as _TowerRedirectResponse, FileResponse as _TowerFileResponse
+from starlette.responses import Response as _TowerResponse
+
+_TOWER_HEADER_DIR = _TowerPath("data/tower_header")
+_TOWER_HEADER_CURRENT = _TOWER_HEADER_DIR / "current.txt"
+
+@app.post("/tower/header-upload")
+async def tower_header_upload(file: _TowerUploadFile = _TowerFile(...)):
+    _TOWER_HEADER_DIR.mkdir(parents=True, exist_ok=True)
+
+    name = file.filename or "header.jpg"
+    ext = _TowerPath(name).suffix.lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+        return _TowerRedirectResponse("/tower", status_code=303)
+
+    data = await file.read()
+    if not data:
+        return _TowerRedirectResponse("/tower", status_code=303)
+
+    if len(data) > 15 * 1024 * 1024:
+        return _TowerRedirectResponse("/tower", status_code=303)
+
+    out = _TOWER_HEADER_DIR / ("header" + ext)
+    out.write_bytes(data)
+    _TOWER_HEADER_CURRENT.write_text(out.name, encoding="utf-8")
+
+    return _TowerRedirectResponse("/tower", status_code=303)
+
+@app.get("/tower/header-image")
+def tower_header_image():
+    try:
+        name = _TOWER_HEADER_CURRENT.read_text(encoding="utf-8").strip()
+        target = _TOWER_HEADER_DIR / name
+        if target.exists():
+            return _TowerFileResponse(
+                target,
+                headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"}
+            )
+    except Exception:
+        pass
+
+    return _TowerResponse(status_code=404)
+# === END TOWER HEADER REAL UPLOAD PATCH ===
+

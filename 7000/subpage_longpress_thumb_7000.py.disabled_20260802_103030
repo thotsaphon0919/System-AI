@@ -1,0 +1,226 @@
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+from pathlib import Path
+import json
+
+MARKER = "INFINI_SUBPAGE_LONGPRESS_THUMB_V1"
+
+INJECT = r"""
+<!-- INFINI_SUBPAGE_LONGPRESS_THUMB_V1 -->
+<style>
+.infini-sub-card{
+  position:relative!important;overflow:hidden!important;
+  touch-action:manipulation!important;
+  -webkit-touch-callout:none!important;
+  -webkit-user-select:none!important;user-select:none!important
+}
+.infini-sub-card img,.infini-sub-card video{
+  -webkit-touch-callout:none!important;
+  -webkit-user-select:none!important;user-select:none!important
+}
+.infini-sub-thumb{
+  position:absolute!important;inset:0!important;z-index:0!important;
+  width:100%!important;height:100%!important;object-fit:cover!important;
+  border:0!important;border-radius:inherit!important;background:#050302!important;
+  pointer-events:none!important
+}
+.infini-sub-card>*:not(.infini-sub-thumb){position:relative;z-index:2}
+.infini-sub-card.has-thumb{background:#050302!important;background-image:none!important}
+.infini-plus-hide{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+.infini-hold-hint{
+  position:absolute;top:9px;right:9px;z-index:20;width:36px;height:36px;
+  display:grid;place-items:center;border:1px solid rgba(255,183,77,.66);
+  border-radius:999px;background:rgba(0,0,0,.72);color:#ffd18a;
+  font:950 16px/1 system-ui;pointer-events:none
+}
+.infini-toast{
+  position:fixed;top:12px;left:50%;z-index:999999;transform:translateX(-50%);
+  display:none;max-width:calc(100% - 28px);padding:10px 14px;
+  border:1px solid rgba(255,145,0,.58);border-radius:999px;
+  background:#170a03;color:#ffd398;text-align:center;font:850 13px system-ui
+}
+</style>
+<script>
+(function(){
+ if(window.__INFINI_SUBPAGE_LONGPRESS_THUMB_V1__)return;
+ window.__INFINI_SUBPAGE_LONGPRESS_THUMB_V1__=true;
+
+ const RX=/(?:^|\D)(\d+\.\d+\.\d+)(?:\D|$)/;
+ const cards=new Map();
+ let suppressCard=null,suppressUntil=0,busy=false;
+
+ function txt(v){return String(v||"").replace(/\s+/g," ").trim()}
+ function toast(m){
+   let b=document.getElementById("infiniSubToast");
+   if(!b){b=document.createElement("div");b.id="infiniSubToast";b.className="infini-toast";document.body.appendChild(b)}
+   b.textContent=m;b.style.display="block";clearTimeout(b._t);
+   b._t=setTimeout(()=>b.style.display="none",1600)
+ }
+ function cardFor(label){
+   let d=label.closest("a,button,[role='link'],[role='button'],.sub-card,.subpage-card,.page-card,.card,.tile");
+   if(d){let r=d.getBoundingClientRect();if(r.width>=110&&r.height>=120)return d}
+   let n=label.parentElement,b=null;
+   while(n&&n!==document.body){
+     let r=n.getBoundingClientRect(),t=txt(n.textContent);
+     if(r.width>=110&&r.height>=140&&r.height<=760&&t.length<=300){b=n;if(r.width<=Math.max(innerWidth*.72,420))return n}
+     n=n.parentElement
+   }
+   return b
+ }
+ function hidePlus(card){
+   card.querySelectorAll("*").forEach(e=>{
+     if(!e.children.length&&["＋","+"].includes(txt(e.textContent)))e.classList.add("infini-plus-hide")
+   })
+ }
+ function bust(u){if(!u)return"";return u+(u.includes("?")?"&":"?")+"t="+Date.now()}
+ function show(card,item){
+   if(!card||!item||!item.media_url)return;
+   card.classList.add("has-thumb");hidePlus(card);
+   let old=card.querySelector("img,video"),video=item.media_type==="video";
+   if(old&&((video&&old.tagName==="VIDEO")||(!video&&old.tagName==="IMG"))){
+     old.src=bust(item.media_url);old.draggable=false;if(video)old.load();return
+   }
+   let m=document.createElement(video?"video":"img");
+   m.className="infini-sub-thumb";m.src=bust(item.media_url);m.draggable=false;m.setAttribute("aria-hidden","true");
+   if(video){m.muted=true;m.playsInline=true;m.preload="metadata"}
+   card.insertBefore(m,card.firstChild)
+ }
+ async function choose(no,card){
+   if(busy)return;
+   let i=document.createElement("input");i.type="file";i.accept="image/*,video/*";i.hidden=true;document.body.appendChild(i);
+   i.onchange=async()=>{
+     let f=i.files&&i.files[0];if(!f){i.remove();return}
+     busy=true;let fd=new FormData();fd.append("file",f);toast("กำลังอัปโหลด no."+no+"...");
+     try{
+       let r=await fetch("/api/detail-page/"+encodeURIComponent(no)+"/upload",{method:"POST",body:fd});
+       if(!r.ok)throw new Error(await r.text());
+       let g=await r.json(),p=(g.pages||[]).find(x=>x.no===no);
+       if(p)show(card,p);toast("รูปขึ้นใน no."+no+" แล้ว")
+     }catch(e){console.error(e);toast("อัปโหลดไม่สำเร็จ")}
+     finally{busy=false;setTimeout(()=>i.remove(),500)}
+   };
+   i.click()
+ }
+ function longPress(card,no){
+   let timer=null,x=0,y=0;
+   const cancel=()=>{if(timer){clearTimeout(timer);timer=null}};
+   card.addEventListener("pointerdown",e=>{
+     if(e.pointerType==="mouse"&&e.button!==0)return;
+     if(e.target.closest("input,textarea,select"))return;
+     x=e.clientX||0;y=e.clientY||0;cancel();
+     timer=setTimeout(()=>{
+       timer=null;suppressCard=card;suppressUntil=Date.now()+1600;
+       if(navigator.vibrate)navigator.vibrate(25);
+       choose(no,card)
+     },280)
+   },true);
+   card.addEventListener("pointermove",e=>{
+     if(timer&&(Math.abs((e.clientX||0)-x)>12||Math.abs((e.clientY||0)-y)>12))cancel()
+   },true);
+   ["pointerup","pointercancel","pointerleave"].forEach(ev=>card.addEventListener(ev,cancel,true));
+   card.addEventListener("contextmenu",e=>{e.preventDefault();e.stopPropagation()},true)
+ }
+ function scan(){
+   cards.clear();
+   document.querySelectorAll("body *").forEach(el=>{
+     if(el.children.length)return;
+     let m=txt(el.textContent).match(RX);if(!m)return;
+     let no=m[1],card=cardFor(el);if(!card||cards.has(no))return;
+     cards.set(no,card);
+     if(card.dataset.infiniHold!=="1"){
+       card.dataset.infiniHold="1";card.classList.add("infini-sub-card");
+       let h=document.createElement("span");h.className="infini-hold-hint";h.textContent="↥";card.appendChild(h);
+       longPress(card,no)
+     }
+   });
+   return cards.size
+ }
+ async function sync(){
+   try{
+     let r=await fetch("/api/detail-thumbnails?t="+Date.now(),{cache:"no-store"});
+     if(!r.ok)return;let d=await r.json(),items=d.items||{};
+     Object.keys(items).forEach(no=>{let c=cards.get(no);if(c)show(c,items[no])})
+   }catch(e){console.error(e)}
+ }
+ window.addEventListener("click",e=>{
+   if(suppressCard&&Date.now()<suppressUntil&&suppressCard.contains(e.target)){
+     e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+     suppressCard=null;suppressUntil=0
+   }
+ },true);
+ window.addEventListener("contextmenu",e=>{
+   let c=e.target.closest&&e.target.closest(".infini-sub-card");
+   if(c){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()}
+ },true);
+
+ async function start(){
+   scan();await sync();let n=0;
+   let t=setInterval(async()=>{n++;scan();if([2,6,12].includes(n))await sync();if(n>=18)clearInterval(t)},350)
+ }
+ document.readyState==="loading"?document.addEventListener("DOMContentLoaded",start):start()
+})();
+</script>
+"""
+
+class SubpageLongpressThumbMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if not (path.startswith("/subpages/") or path.startswith("/subpage/")):
+            return response
+        if "text/html" not in response.headers.get("content-type","").lower():
+            return response
+        iterator = getattr(response, "body_iterator", None)
+        if iterator is None:
+            return response
+        chunks = []
+        async for chunk in iterator:
+            chunks.append(chunk)
+        raw = b"".join(chunks)
+        try:
+            html = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return Response(raw, status_code=response.status_code, headers=dict(response.headers), media_type="text/html")
+        if MARKER not in html:
+            html = html.replace("</body>", INJECT + "\n</body>", 1) if "</body>" in html else html + INJECT
+        headers = dict(response.headers)
+        headers.pop("content-length", None)
+        headers.pop("content-encoding", None)
+        return Response(html, status_code=response.status_code, headers=headers, media_type="text/html")
+
+def install_subpage_longpress_thumb_7000(app):
+    base = Path(__file__).resolve().parent
+    db_file = base / "data" / "detail_swipe_7000.json"
+    paths = {getattr(route,"path",None) for route in app.routes}
+
+    if "/api/detail-thumbnails" not in paths:
+        @app.get("/api/detail-thumbnails")
+        def detail_thumbnails():
+            items = {}
+            if db_file.exists():
+                try:
+                    data = json.loads(db_file.read_text(encoding="utf-8"))
+                    groups = data.get("groups", {})
+                    if isinstance(groups, dict):
+                        for group in groups.values():
+                            pages = group.get("pages", []) if isinstance(group, dict) else []
+                            for page in pages:
+                                if not isinstance(page, dict):
+                                    continue
+                                no = str(page.get("no","")).strip()
+                                url = str(page.get("media_url","")).strip()
+                                if no and url:
+                                    items[no] = {
+                                        "media_url": url,
+                                        "media_type": page.get("media_type","image"),
+                                    }
+                except Exception:
+                    items = {}
+            return JSONResponse({"ok": True, "items": items})
+
+    marker = "_infini_subpage_longpress_thumb_v1"
+    if getattr(app.state, marker, False):
+        return
+    app.add_middleware(SubpageLongpressThumbMiddleware)
+    setattr(app.state, marker, True)

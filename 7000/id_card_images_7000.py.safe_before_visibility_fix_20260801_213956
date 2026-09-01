@@ -1,0 +1,117 @@
+from fastapi import UploadFile, File, HTTPException
+from fastapi.responses import FileResponse, JSONResponse
+from pathlib import Path
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+import time
+
+MARKER = "INFINI_ID_CARD_IMAGES_V1"
+KEYS = {"creative", "zone1", "zone2", "zone3", "zone4"}
+
+INJECT = r'''
+<!-- INFINI_ID_CARD_IMAGES_V1 -->
+<style>
+.infini-pic-card{position:relative!important;overflow:hidden!important;isolation:isolate!important;background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
+.infini-pic-card:before{content:""!important;position:absolute!important;inset:0!important;z-index:0!important;pointer-events:none!important;background:linear-gradient(105deg,rgba(0,0,0,.88),rgba(0,0,0,.66) 58%,rgba(0,0,0,.45))!important}
+.infini-pic-card>*:not(.infini-pic-upload){position:relative!important;z-index:2!important}
+.infini-pic-upload{position:absolute!important;top:10px!important;right:10px!important;z-index:30!important;width:42px!important;height:42px!important;padding:0!important;border:1px solid rgba(255,181,69,.72)!important;border-radius:999px!important;background:rgba(0,0,0,.78)!important;color:#ffd18a!important;font-size:19px!important;font-weight:950!important;line-height:1!important;box-shadow:0 6px 18px rgba(0,0,0,.42)!important;cursor:pointer!important;touch-action:manipulation!important}
+.infini-pic-upload:active{transform:scale(.92)!important;background:#ff9a18!important;color:#180800!important}
+.infini-pic-zone{min-height:178px!important}.infini-pic-creative{min-height:260px!important}.infini-pic-card.has-pic{border-color:rgba(255,145,0,.65)!important;box-shadow:0 16px 36px rgba(0,0,0,.42)!important}
+@media(max-width:520px){.infini-pic-upload{width:39px!important;height:39px!important}.infini-pic-zone{min-height:185px!important}}
+</style>
+<script>
+(function(){
+ if(window.__INFINI_ID_CARD_IMAGES_V1__)return;window.__INFINI_ID_CARD_IMAGES_V1__=true;
+ const INFO={creative:{text:"CREATIVE ROOM",cls:"infini-pic-creative"},zone1:{text:"ZONE 1",cls:"infini-pic-zone"},zone2:{text:"ZONE 2",cls:"infini-pic-zone"},zone3:{text:"ZONE 3",cls:"infini-pic-zone"},zone4:{text:"ZONE 4",cls:"infini-pic-zone"}};
+ const clean=v=>String(v||"").replace(/\s+/g," ").trim().toUpperCase();
+ function leaf(text){const w=clean(text);return [...document.querySelectorAll("body *")].find(e=>!e.children.length&&clean(e.textContent)===w)||null}
+ function card(label,key){if(!label)return null;const sel=key==="creative"?".hero,.panel,.creative-room,.creativeRoom,.card,.tile,a,button,[role='link'],[role='button']":"a,button,[role='link'],[role='button'],.zone-card,.zoneCard,.zone,.card,.tile";let d=label.closest(sel);if(d&&d.getBoundingClientRect().width>=110)return d;let n=label.parentElement;while(n&&n!==document.body){const r=n.getBoundingClientRect(),t=clean(n.textContent);if(r.width>=110&&r.height>=90&&r.height<=650&&t.length<=500)return n;n=n.parentElement}return label.parentElement}
+ function toast(msg){let b=document.getElementById("infiniPicToast");if(!b){b=document.createElement("div");b.id="infiniPicToast";b.style.cssText="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:999999;max-width:calc(100% - 28px);padding:10px 14px;border:1px solid rgba(255,145,0,.58);border-radius:999px;background:#170a03;color:#ffd398;font:800 13px system-ui;text-align:center;display:none";document.body.appendChild(b)}b.textContent=msg;b.style.display="block";clearTimeout(b._t);b._t=setTimeout(()=>b.style.display="none",1500)}
+ function upload(key,btn){const input=document.createElement("input");input.type="file";input.accept="image/jpeg,image/png,image/webp";input.hidden=true;document.body.appendChild(input);input.onchange=async()=>{const f=input.files&&input.files[0];if(!f){input.remove();return}const fd=new FormData();fd.append("file",f);const old=btn.textContent;btn.textContent="…";toast("กำลังอัปโหลดรูป...");try{const r=await fetch("/id-card-images/"+encodeURIComponent(key)+"/upload",{method:"POST",body:fd});if(!r.ok)throw new Error(await r.text());toast("เปลี่ยนรูปช่องแล้ว");setTimeout(()=>location.reload(),350)}catch(e){console.error(e);btn.textContent=old;toast("อัปโหลดรูปไม่สำเร็จ")}finally{setTimeout(()=>input.remove(),500)}};input.click()}
+ function button(c,key){if(c.querySelector('.infini-pic-upload[data-key="'+key+'"]'))return;const b=document.createElement("button");b.type="button";b.className="infini-pic-upload";b.dataset.key=key;b.textContent="⇧";b.setAttribute("aria-label","อัปโหลดรูปประจำช่อง");const stop=e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()};b.addEventListener("pointerdown",stop,true);b.addEventListener("click",e=>{stop(e);upload(key,b)},true);c.appendChild(b)}
+ function decorate(key,exists){const i=INFO[key],c=card(leaf(i.text),key);if(!c)return false;c.classList.add("infini-pic-card",i.cls);c.dataset.infiniPicKey=key;if(exists){c.classList.add("has-pic");c.style.setProperty("background-image","url('/id-card-images/"+encodeURIComponent(key)+"/image?v="+Date.now()+"')","important")}button(c,key);return true}
+ async function install(){let data={cards:{}};try{const r=await fetch("/api/id-card-images",{cache:"no-store"});if(r.ok)data=await r.json()}catch(e){console.error(e)}const apply=()=>Object.keys(INFO).reduce((n,k)=>n+(decorate(k,!!(data.cards||{})[k])?1:0),0);if(apply()>=5)return;let tries=0,t=setInterval(()=>{tries++;if(apply()>=5||tries>=15)clearInterval(t)},300)}
+ document.readyState==="loading"?document.addEventListener("DOMContentLoaded",install):install();
+})();
+</script>
+'''
+
+class CardImageMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        if "text/html" not in response.headers.get("content-type", "").lower():
+            return response
+        path = request.url.path
+        allowed = (
+            path == "/id-home" or path.startswith("/id-home/") or
+            path == "/id" or path.startswith("/id/") or
+            path == "/member/id" or path.startswith("/member/id/")
+        )
+        if not allowed:
+            return response
+        iterator = getattr(response, "body_iterator", None)
+        if iterator is None:
+            return response
+        chunks = []
+        async for chunk in iterator:
+            chunks.append(chunk)
+        raw = b"".join(chunks)
+        try:
+            html = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return Response(raw, status_code=response.status_code, headers=dict(response.headers), media_type="text/html")
+        if MARKER not in html:
+            html = html.replace("</body>", INJECT + "\n</body>", 1) if "</body>" in html else html + INJECT
+        headers = dict(response.headers)
+        headers.pop("content-length", None)
+        headers.pop("content-encoding", None)
+        return Response(html, status_code=response.status_code, headers=headers, media_type="text/html")
+
+
+def install_id_card_images_7000(app):
+    base = Path(__file__).resolve().parent
+    store = base / "data" / "id_card_images"
+    store.mkdir(parents=True, exist_ok=True)
+
+    def latest(key):
+        files = [p for p in store.glob(f"{key}_*") if p.is_file()]
+        return max(files, key=lambda p: p.stat().st_mtime) if files else None
+
+    @app.get("/api/id-card-images")
+    def state():
+        return JSONResponse({"ok": True, "cards": {key: latest(key) is not None for key in KEYS}})
+
+    @app.post("/id-card-images/{key}/upload")
+    async def upload(key: str, file: UploadFile = File(...)):
+        if key not in KEYS:
+            raise HTTPException(404, "ไม่พบช่องนี้")
+        ext = Path(file.filename or "").suffix.lower()
+        if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+            raise HTTPException(400, "รองรับเฉพาะ JPG PNG และ WEBP")
+        raw = await file.read()
+        if not raw:
+            raise HTTPException(400, "ไฟล์รูปว่าง")
+        if len(raw) > 15 * 1024 * 1024:
+            raise HTTPException(400, "รูปต้องไม่เกิน 15 MB")
+        for old in store.glob(f"{key}_*"):
+            try:
+                old.unlink()
+            except Exception:
+                pass
+        out = store / f"{key}_{int(time.time())}{ext}"
+        out.write_bytes(raw)
+        return JSONResponse({"ok": True, "key": key, "image_url": f"/id-card-images/{key}/image"})
+
+    @app.get("/id-card-images/{key}/image")
+    def image(key: str):
+        if key not in KEYS:
+            return Response(status_code=404)
+        target = latest(key)
+        if target is None:
+            return Response(status_code=404)
+        return FileResponse(target, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
+
+    marker = "_infini_id_card_images_installed"
+    if not getattr(app.state, marker, False):
+        app.add_middleware(CardImageMiddleware)
+        setattr(app.state, marker, True)

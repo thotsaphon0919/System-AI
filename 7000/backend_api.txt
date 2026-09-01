@@ -1,0 +1,154 @@
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<button class="plusBar" id="plusBtn">+</button>
+
+<script>
+let state=null;
+let topState=null;
+let longTimer=null;
+let longPressed=false;
+
+const $=id=>document.getElementById(id);
+
+function toast(msg){
+  const t=$("toast");
+  t.textContent=msg;
+  t.style.display="block";
+  setTimeout(()=>t.style.display="none",1400);
+}
+
+async function api(url,opt={}){
+  const res=await fetch(url,{headers:{"Content-Type":"application/json",...(opt.headers||{})},...opt});
+  if(!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
+
+function mediaHtml(url,type,emptyClass){
+  if(!url) return `<div class="${emptyClass}">+</div>`;
+  if(type==="video" || url.toLowerCase().match(/\.(mp4|webm|mov)$/)){
+    return `<video src="${url}" muted autoplay loop playsinline></video>`;
+  }
+  return `<img src="${url}">`;
+}
+
+function pickFile(uploadUrl){
+  const input=document.createElement("input");
+  input.type="file";
+  input.accept="image/*,video/*";
+  input.onchange=async()=>{
+    const f=input.files[0];
+    if(!f) return;
+
+    const fd=new FormData();
+    fd.append("file",f);
+
+    toast("กำลังอัปโหลด...");
+    const res=await fetch(uploadUrl,{method:"POST",body:fd});
+    if(!res.ok){
+      toast("อัปโหลดไม่สำเร็จ");
+      return;
+    }
+
+    toast("อัปโหลดแล้ว");
+    setTimeout(()=>location.reload(),500);
+  };
+  input.click();
+}
+
+function bindLongPress(el,onLong,onTap){
+  el.addEventListener("pointerdown",()=>{
+    longPressed=false;
+    clearTimeout(longTimer);
+    longTimer=setTimeout(()=>{
+      longPressed=true;
+      onLong();
+    },650);
+  });
+
+  el.addEventListener("pointerup",()=>{
+    clearTimeout(longTimer);
+    setTimeout(()=>{
+      if(!longPressed && onTap) onTap();
+    },10);
+  });
+
+  el.addEventListener("pointerleave",()=>{
+    clearTimeout(longTimer);
+  });
+
+  el.addEventListener("pointercancel",()=>{
+    clearTimeout(longTimer);
+  });
+}
+
+function renderHero(){
+  const box=$("heroBox");
+  const url=topState.media_url||"";
+  const type=topState.media_type||"";
+
+  box.innerHTML=mediaHtml(url,type,"empty");
+
+  bindLongPress(
+    box,
+    ()=>pickFile("/api/simple/top/upload"),
+    ()=>toast("กดค้างเพื่ออัปโหลดสื่อบนสุด")
+  );
+}
+
+function renderCards(){
+  const grid=$("grid");
+  grid.innerHTML="";
+
+  const pages=(state.pages||[]);
+
+  pages.forEach(pg=>{
+    const url=pg.cover_url||pg.media_url||"";
+    const type=pg.cover_type||pg.media_type||"";
+
+    const card=document.createElement("div");
+    card.className="card";
+    card.innerHTML=`
+      <div class="cardMedia">${mediaHtml(url,type,"cardEmpty")}</div>
+    `;
+
+    bindLongPress(
+      card,
+      ()=>pickFile("/api/pages/"+pg.id+"/upload"),
+      ()=>location.href="/room/"+pg.id
+    );
+
+    grid.appendChild(card);
+  });
+}
+
+async function load(){
+  state=await api("/api/state");
+  topState=await api("/api/simple/top");
+  renderHero();
+  renderCards();
+}
+
+$("plusBtn").onclick=async()=>{
+  toast("กำลังเพิ่มช่อง...");
+  const pg=await api("/api/simple/add-card",{method:"POST",body:"{}"});
+  toast("เพิ่มช่องแล้ว");
+  setTimeout(()=>location.reload(),400);
+};
+
+load().catch(e=>{console.error(e);toast("โหลดหน้าไม่สำเร็จ")});
+</script>
+</body>
+</html>
+"""
+
+def final_simple_home():
+    return HTMLResponse(FINAL_SIMPLE_HOME_HTML)
+
+app.router.routes = [
+    r for r in app.router.routes
+    if not (isinstance(r, APIRoute) and r.path == "/" and "GET" in r.methods)
+]
+
+app.add_api_route("/", final_simple_home, methods=["GET"], response_class=HTMLResponse)

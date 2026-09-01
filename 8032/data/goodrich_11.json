@@ -1,0 +1,42 @@
+{
+  "users": {
+    "usr_170da8fbd7": {
+      "id": "usr_170da8fbd7",
+      "username": "Simon",
+      "password": "9800a8677d99e5f6968d7357e44006388b09d3b6a8676d0f930fbaa63d02330d"
+    }
+  },
+  "sessions": {
+    "b51caaf186845168285142e8ff7dc75f48e126cb05a96b0e": "usr_170da8fbd7"
+  },
+  "homes": {
+    "usr_170da8fbd7": {
+      "owner_id": "usr_170da8fbd7",
+      "name": "Home ของ Simon"
+    }
+  },
+  "desks": {
+    "usr_170da8fbd7": [
+      "life",
+      "work",
+      "shop",
+      "trade",
+      "media",
+      "api"
+    ]
+  },
+  "sheets": {
+    "usr_170da8fbd7": []
+  },
+  "media": {
+    "usr_170da8fbd7": []
+  },
+  "api_keys": {
+    "usr_170da8fbd7": {}
+  },
+  "wallets": {
+    "usr_170da8fbd7": {
+      "balance": 0
+    }
+  }
+}

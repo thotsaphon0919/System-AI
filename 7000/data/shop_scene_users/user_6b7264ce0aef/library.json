@@ -1,0 +1,139 @@
+{
+  "items": [
+    {
+      "id": "img_b811eff32131",
+      "kind": "scene",
+      "title": "ฉากโปสเตอร์",
+      "stored": "scene_7f89754940da4266bb34ca4fa69f8656.png",
+      "url": "/shop-scene-builder/file/scene_7f89754940da4266bb34ca4fa69f8656.png",
+      "created_at": 1785545656,
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_698843c0c2af",
+      "kind": "product",
+      "title": "รองเท้า adidas",
+      "stored": "product_1276d03e540d45b99adfd40cfad36d11.jpg",
+      "url": "/shop-scene-builder/file/product_1276d03e540d45b99adfd40cfad36d11.jpg",
+      "created_at": 1785546164,
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_eb708a7e7895",
+      "kind": "product",
+      "title": "เสื้อยืด",
+      "stored": "product_ff8c36dfb2af48c9a641a22386b3df3e.jpg",
+      "url": "/shop-scene-builder/file/product_ff8c36dfb2af48c9a641a22386b3df3e.jpg",
+      "created_at": 1785548520,
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_26982e529a62",
+      "kind": "product",
+      "title": "กระเป๋าเป้",
+      "stored": "product_9c4383933f8e4d26a836f0ab6d6f76f7.png",
+      "url": "/shop-scene-builder/file/product_9c4383933f8e4d26a836f0ab6d6f76f7.png",
+      "created_at": 1785556177,
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_a1ae86476e0b",
+      "kind": "generated",
+      "title": "รูปที่สร้างจาก Scene Builder",
+      "stored": "generated_a06ea203f8884b8bb99c11333deb945e.png",
+      "url": "/shop-scene-builder/file/generated_a06ea203f8884b8bb99c11333deb945e.png",
+      "created_at": 1785556331,
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_d29c2cb708ee",
+      "kind": "product",
+      "title": "8614",
+      "stored": "product_8614_09e6fb7d2d60.jpg",
+      "url": "/shop-scene-builder/file/product_8614_09e6fb7d2d60.jpg",
+      "created_at": 1786051723,
+      "source": "INFINI_SHOP_SCENE_SLOTS_7000_V4",
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_2c1bcdfa7243",
+      "kind": "product",
+      "title": "8590",
+      "stored": "product_8590_a43856d18195.png",
+      "url": "/shop-scene-builder/file/product_8590_a43856d18195.png",
+      "created_at": 1786051723,
+      "source": "INFINI_SHOP_SCENE_SLOTS_7000_V4",
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_353d704d37ea",
+      "kind": "product",
+      "title": "8589",
+      "stored": "product_8589_3f91d18b223d.png",
+      "url": "/shop-scene-builder/file/product_8589_3f91d18b223d.png",
+      "created_at": 1786051723,
+      "source": "INFINI_SHOP_SCENE_SLOTS_7000_V4",
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_82d0ff064f66",
+      "kind": "product",
+      "title": "8587",
+      "stored": "product_8587_a5dff6f7c657.png",
+      "url": "/shop-scene-builder/file/product_8587_a5dff6f7c657.png",
+      "created_at": 1786051723,
+      "source": "INFINI_SHOP_SCENE_SLOTS_7000_V4",
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_0043b728b399",
+      "kind": "product",
+      "title": "8588",
+      "stored": "product_8588_7de18160fcb1.png",
+      "url": "/shop-scene-builder/file/product_8588_7de18160fcb1.png",
+      "created_at": 1786051723,
+      "source": "INFINI_SHOP_SCENE_SLOTS_7000_V4",
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_4cea3d28e612",
+      "kind": "product",
+      "title": "8581",
+      "stored": "product_8581_854785adc7c3.jpg",
+      "url": "/shop-scene-builder/file/product_8581_854785adc7c3.jpg",
+      "created_at": 1786051723,
+      "source": "INFINI_SHOP_SCENE_SLOTS_7000_V4",
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_06b59c82d280",
+      "kind": "scene",
+      "title": "6621",
+      "stored": "scene_6621_d3695b867504.png",
+      "url": "/shop-scene-builder/file/scene_6621_d3695b867504.png",
+      "created_at": 1786051796,
+      "source": "INFINI_SHOP_SCENE_SLOTS_7000_V4",
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_584a1994ebe5",
+      "kind": "generated",
+      "title": "ร้านที่จัดด้วย INFINI AI Shop",
+      "stored": "generated_shop_462aecd103c544ceb1edcad4949bce8b.png",
+      "url": "/shop-scene-builder/file/generated_shop_462aecd103c544ceb1edcad4949bce8b.png",
+      "created_at": 1786051959,
+      "source": "INFINI_SHOP_SCENE_SLOTS_7000_V4",
+      "owner": "user_6b7264ce0aef"
+    },
+    {
+      "id": "img_cc48158de569",
+      "kind": "generated",
+      "title": "ร้านที่จัดด้วย INFINI AI Shop",
+      "stored": "generated_shop_12a2dcc5d9454e40a3f0d6592fc4a491.png",
+      "url": "/shop-scene-builder/file/generated_shop_12a2dcc5d9454e40a3f0d6592fc4a491.png",
+      "created_at": 1786051970,
+      "source": "INFINI_SHOP_SCENE_SLOTS_7000_V4",
+      "owner": "user_6b7264ce0aef"
+    }
+  ]
+}

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>INFINI — Creative Home Office Center</title>
+
+<style>
+:root{
+  --bg:#02040b;
+  --panel:rgba(8,14,30,.88);
+  --line:rgba(93,185,255,.32);
+  --cyan:#45d7ff;
+  --purple:#a855f7;
+  --pink:#ff4fd8;
+  --text:#f5f7ff;
+  --muted:#9aa9c7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  overflow-x:hidden;
+}
+a{text-decoration:none;color:inherit}
+
+.hero{
+  position:relative;
+  min-height:100svh;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  overflow:hidden;
+}
+.hero video{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.shade{
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(to bottom,rgba(0,0,0,.08),rgba(2,4,11,.25) 45%,#02040b 100%),
+    linear-gradient(90deg,rgba(0,0,0,.45),transparent);
+}
+.top{
+  position:absolute;
+  z-index:3;
+  top:0;left:0;right:0;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px;
+}
+.logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+.infinity{
+  font-size:38px;
+  color:var(--cyan);
+  text-shadow:0 0 25px var(--cyan);
+}
+.login{
+  padding:11px 16px;
+  border:1px solid var(--line);
+  border-radius:15px;
+  background:rgba(3,9,22,.7);
+  backdrop-filter:blur(12px);
+}
+.hero-content{
+  position:relative;
+  z-index:2;
+  width:min(100%,760px);
+  padding:130px 21px 48px;
+  text-align:center;
+}
+.badge{
+  display:inline-block;
+  padding:9px 15px;
+  border-radius:999px;
+  border:1px solid rgba(69,215,255,.45);
+  background:rgba(4,13,31,.72);
+  color:#c9f6ff;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:1px;
+  margin-bottom:18px;
+}
+h1{
+  font-size:clamp(44px,13vw,82px);
+  line-height:.95;
+  letter-spacing:5px;
+  text-shadow:0 0 35px rgba(91,143,255,.55);
+}
+h1 span{
+  display:block;
+  font-size:.29em;
+  margin-top:16px;
+  color:#c4d8ff;
+  letter-spacing:3px;
+  line-height:1.4;
+}
+.hero p{
+  max-width:610px;
+  margin:20px auto 25px;
+  color:#c5cde0;
+  line-height:1.75;
+}
+.buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:11px;
+}
+.btn{
+  min-height:57px;
+  border-radius:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+}
+.primary{
+  color:#02040b;
+  background:linear-gradient(135deg,var(--cyan),#7687ff,var(--purple));
+  box-shadow:0 15px 40px rgba(68,117,255,.28);
+}
+.secondary{
+  border:1px solid var(--line);
+  background:rgba(4,11,27,.72);
+  backdrop-filter:blur(12px);
+}
+.scroll{
+  margin-top:27px;
+  color:#8291ae;
+  font-size:12px;
+}
+
+main{
+  width:min(100%,1050px);
+  margin:auto;
+  padding:20px 17px 80px;
+}
+section{margin-top:52px}
+.label{
+  color:var(--cyan);
+  font-size:11px;
+  letter-spacing:2px;
+  font-weight:900;
+  margin-bottom:7px;
+}
+h2{
+  font-size:29px;
+  margin-bottom:9px;
+}
+.desc{
+  color:var(--muted);
+  line-height:1.7;
+  margin-bottom:20px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+.card{
+  min-height:185px;
+  padding:18px;
+  border-radius:23px;
+  border:1px solid var(--line);
+  background:
+    radial-gradient(circle at 100% 0,rgba(121,76,255,.2),transparent 48%),
+    linear-gradient(145deg,#101b39,#050916);
+}
+.icon{
+  width:49px;height:49px;
+  display:grid;
+  place-items:center;
+  border-radius:16px;
+  background:rgba(2,8,22,.75);
+  border:1px solid var(--line);
+  font-size:23px;
+  margin-bottom:30px;
+}
+.card h3{font-size:17px;margin-bottom:7px}
+.card p{font-size:13px;color:var(--muted);line-height:1.55}
+
+.steps{display:grid;gap:12px}
+.step{
+  display:grid;
+  grid-template-columns:57px 1fr;
+  align-items:center;
+  gap:14px;
+  padding:17px;
+  border:1px solid rgba(93,185,255,.22);
+  background:var(--panel);
+  border-radius:21px;
+}
+.num{
+  width:56px;height:56px;
+  display:grid;
+  place-items:center;
+  border-radius:17px;
+  color:#02040b;
+  font-size:22px;
+  font-weight:1000;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+}
+.step p{color:var(--muted);font-size:14px;margin-top:4px}
+
+.feature{
+  padding:25px 20px;
+  border-radius:27px;
+  border:1px solid var(--line);
+  background:
+    radial-gradient(circle at 80% 0,rgba(168,85,247,.25),transparent 40%),
+    linear-gradient(145deg,#101b3a,#050916);
+}
+.feature h2{font-size:28px;line-height:1.3}
+.checks{display:grid;gap:11px;margin-top:20px;color:#c4cee2}
+.checks span::before{content:"✓";color:var(--cyan);margin-right:10px;font-weight:900}
+
+.plans{display:grid;gap:13px}
+.plan{
+  padding:22px;
+  border-radius:24px;
+  border:1px solid var(--line);
+  background:var(--panel);
+}
+.plan.hot{
+  border-color:#9568ff;
+  box-shadow:0 15px 45px rgba(110,72,255,.18);
+}
+.price{font-size:32px;font-weight:1000;margin:8px 0 16px}
+.price small{font-size:13px;color:var(--muted)}
+.list{display:grid;gap:9px;color:#b4c0d8;font-size:14px;margin-bottom:20px}
+.plan .btn{width:100%;background:#132443;border:1px solid var(--line)}
+.plan.hot .btn{color:#02040b;background:linear-gradient(135deg,var(--cyan),var(--purple))}
+
+.final{
+  text-align:center;
+  padding:35px 20px;
+  border:1px solid var(--line);
+  border-radius:28px;
+  background:
+    radial-gradient(circle at top,rgba(73,115,255,.25),transparent 48%),
+    var(--panel);
+}
+.final .infinity{font-size:70px}
+.footer{
+  text-align:center;
+  padding:40px 5px 0;
+  color:#65728b;
+  font-size:11px;
+  letter-spacing:1px;
+}
+
+@media(min-width:760px){
+  .grid{grid-template-columns:repeat(3,1fr)}
+  .steps{grid-template-columns:repeat(3,1fr)}
+  .step{display:block;min-height:205px}
+  .num{margin-bottom:25px}
+  .plans{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:520px){
+  .buttons{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<section class="hero">
+  <video autoplay muted loop playsinline preload="metadata">
+    <source src="/uploads/5159.mp4" type="video/mp4">
+  </video>
+
+  <div class="shade"></div>
+
+  <header class="top">
+    <div class="logo">
+      <span class="infinity">∞</span>
+      <span>INFINI</span>
+    </div>
+    <a class="login" href="/login">เข้าสู่ระบบ</a>
+  </header>
+
+  <div class="hero-content">
+    <div class="badge">YOUR PROFILE · YOUR SPACE</div>
+
+    <h1>
+      INFINI
+      <span>พื้นที่ดิจิทัลส่วนตัวหลังโปรไฟล์ของคุณ</span>
+    </h1>
+
+    <p>
+      ใช้โซเชียลบอกว่าคุณมีอะไร แล้วพาคนเข้ามาดูผลงาน สินค้า
+      บริการ และเรื่องราวที่คุณเลือกจัดไว้ใน INFINI SPACE
+    </p>
+
+    <div class="buttons">
+      <a class="btn primary" href="/use-cases">ดูว่า INFINI ใช้ทำอะไรได้</a>
+      <a class="btn secondary" href="#services">สำรวจพื้นที่</a>
+    </div>
+
+    <div class="scroll">เลื่อนลงเพื่อดูระบบ ↓</div>
+  </div>
+</section>
+
+<main>
+
+  <section id="services">
+    <div class="label">START HERE</div>
+    <h2>เลือกสิ่งที่คุณอยากรู้</h2>
+    <p class="desc">
+      หน้านี้สำหรับคนที่ยังไม่ได้สมัคร ให้เห็นภาพก่อนว่า INFINI คืออะไรและนำไปใช้กับงานของตัวเองอย่างไร
+    </p>
+
+    <div class="grid">
+      <a class="card" data-card-key="what-is-infini" href="#what-is-infini">
+        <div class="icon">∞</div>
+        <h3>INFINI คืออะไร</h3>
+        <p>พื้นที่ดิจิทัลส่วนตัวสำหรับรวมสิ่งที่คุณต้องการให้คนอื่นเห็น</p>
+      </a>
+
+      <a class="card" data-card-key="use-cases" href="/use-cases">
+        <div class="icon">🎬</div>
+        <h3>INFINI ทำอะไรได้</h3>
+        <p>ดูวิดีโอตัวอย่างการใช้งานจริง แยกตามร้านค้า ครีเอเตอร์ นักลงทุน และสายงานอื่น ๆ</p>
+      </a>
+
+      <a class="card" data-card-key="zone-demo" href="/zone/shop">
+        <div class="icon">◉</div>
+        <h3>ดู ZONE ตัวอย่าง</h3>
+        <p>ชมพื้นที่รวมงานที่เจ้าของ INFINI ID เลือกนำออกมาให้ผู้เข้าชมเห็น</p>
+      </a>
+
+      <a class="card" data-card-key="manage-space" href="#how-it-works">
+        <div class="icon">🧩</div>
+        <h3>จัดพื้นที่ของคุณ</h3>
+        <p>สร้างงานไว้ในห้องส่วนตัว แล้วเลือกเฉพาะสิ่งที่ต้องการส่งไปแสดงใน Zone</p>
+      </a>
+
+      <a class="card" data-card-key="choose-capacity" href="#plans">
+        <div class="icon">💾</div>
+        <h3>เลือกขนาดพื้นที่</h3>
+        <p>เลือกความจุและบริหารรูป วิดีโอ ไฟล์ ข้อความ และลิงก์ด้วยตัวเอง</p>
+      </a>
+
+      <a class="card" data-card-key="start-infini" href="/register">
+        <div class="icon">🚪</div>
+        <h3>เริ่มต้นกับ INFINI</h3>
+        <p>สร้าง INFINI ID แล้วเริ่มจัดพื้นที่ของคุณจากโครงสร้างเริ่มต้น</p>
+      </a>
+    </div>
+  </section>
+
+  <section id="what-is-infini" class="feature">
+    <div class="label">WHAT IS INFINI SPACE?</div>
+    <h2>โซเชียลพาคนมา<br>INFINI รับคนเข้ามาดูพื้นที่ของคุณ</h2>
+
+    <div class="checks">
+      <span>รวมผลงาน สินค้า บริการ คอลเลกชัน และเรื่องราวไว้ในที่เดียว</span>
+      <span>เจ้าของพื้นที่เลือกเองว่าอยากให้ผู้เข้าชมเห็นอะไร</span>
+      <span>ห้องส่วนตัวใช้สร้างและเก็บงาน ส่วน Zone ใช้แสดงงานที่เลือกแล้ว</span>
+      <span>แปะลิงก์ INFINI ไว้บน Facebook หรือโปรไฟล์โซเชียลของคุณได้</span>
+    </div>
+  </section>
+
+  <section id="how-it-works">
+    <div class="label">HOW IT WORKS</div>
+    <h2>จากห้องส่วนตัวไปสู่ ZONE ของคุณ</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div>
+          <h3>สร้างงานในห้องส่วนตัว</h3>
+          <p>อัปโหลดรูป วิดีโอ ไฟล์ หรือวางลิงก์จากแพลตฟอร์มภายนอก</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">2</div>
+        <div>
+          <h3>เลือกสิ่งที่อยากให้คนเห็น</h3>
+          <p>งานอื่นยังเก็บเป็นส่วนตัวได้ ไม่จำเป็นต้องเปิดเผยทั้งหมด</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">3</div>
+        <div>
+          <h3>ส่งไปแสดงใน ZONE</h3>
+          <p>ผู้ชมเห็นงานจริงที่เจ้าของ ID คัดไว้ และกดดูรายละเอียดต่อได้</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="plans">
+    <div class="label">CHOOSE YOUR SPACE</div>
+    <h2>เลือกขนาด INFINI SPACE ของคุณ</h2>
+    <p class="desc">
+      ราคา Early Access สำหรับช่วงทดสอบ MVP — ไฟล์ที่อัปโหลดเข้า INFINI ใช้ความจุ
+      ส่วนข้อความและลิงก์ YouTube, Facebook หรือ TikTok ใช้พื้นที่เพียงเล็กน้อย
+    </p>
+
+    <div class="plans">
+      <div class="plan">
+        <h3>เริ่มต้นฟรี</h3>
+        <div class="price">0 ฿</div>
+        <div class="list">
+          <span>✓ ความจุทดลอง 500 MB</span>
+          <span>✓ ได้ INFINI ID และพื้นที่เริ่มต้น</span>
+          <span>✓ วางรูป ข้อความ และลิงก์ภายนอก</span>
+          <span>✓ ทดลองส่งงานไปแสดงใน Zone</span>
+        </div>
+        <a class="btn" href="/register">เริ่มใช้ฟรี</a>
+      </div>
+
+      <div class="plan hot">
+        <h3>Creator</h3>
+        <div class="price">390 ฿ <small>/ เดือน</small></div>
+        <div class="list">
+          <span>✓ ความจุ 5 GB</span>
+          <span>✓ สร้างห้อง หน้า และ Zone ภายในความจุ</span>
+          <span>✓ Media Library สำหรับจัดไฟล์</span>
+          <span>✓ เชื่อมวิดีโอและเนื้อหาจากภายนอก</span>
+        </div>
+        <a class="btn" href="/register">เลือก Creator</a>
+      </div>
+
+      <div class="plan">
+        <h3>Pro Space</h3>
+        <div class="price">790 ฿ <small>/ เดือน</small></div>
+        <div class="list">
+          <span>✓ ความจุ 20 GB</span>
+          <span>✓ เหมาะกับร้าน ครีเอเตอร์ และหลายหมวดงาน</span>
+          <span>✓ จัดพื้นที่ขนาดใหญ่ขึ้นจาก ID เดียว</span>
+          <span>✓ เครื่องมือจัดการพื้นที่และไฟล์</span>
+        </div>
+        <a class="btn" href="/register">เลือก Pro Space</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="infinity">∞</div>
+    <h2>ให้คนเห็นสิ่งที่คุณอยากให้เห็น</h2>
+    <p class="desc">
+      สร้าง INFINI ID จัดงานไว้ในห้องของคุณ และเลือกส่งผลงานจริงออกมาแสดงใน Zone
+    </p>
+
+    <div class="buttons">
+      <a class="btn primary" href="/register">สมัครใช้งาน</a>
+      <a class="btn secondary" href="/login">เข้าสู่ระบบ</a>
+    </div>
+  </section>
+
+  <div class="footer">INFINI · YOUR PROFILE · YOUR SPACE · YOUR ZONE</div>
+
+</main>
+
+<!-- INFINI_CARD_IMAGE_EDITOR_V1 -->
+<style>
+  .card{
+    overflow:hidden;
+    touch-action:pan-y;
+  }
+
+  .card-media{
+    position:relative;
+    width:100%;
+    aspect-ratio:4 / 3;
+    margin-bottom:18px;
+    overflow:hidden;
+    display:grid;
+    place-items:center;
+    border-radius:18px;
+    border:1px solid var(--line);
+    background:rgba(2,8,22,.68);
+  }
+
+  .card-media .icon{
+    margin:0;
+  }
+
+  .card-uploaded-image{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:none;
+    object-fit:cover;
+  }
+
+  .card-media.has-image .card-uploaded-image{
+    display:block;
+  }
+
+  .card-media.has-image .icon{
+    display:none;
+  }
+
+  #infiniCardImageMenu{
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    display:none;
+    align-items:flex-end;
+    background:rgba(0,0,0,.68);
+  }
+
+  #infiniCardImageMenu.open{
+    display:flex;
+  }
+
+  .infini-image-sheet{
+    width:100%;
+    padding:20px 18px 28px;
+    border-radius:24px 24px 0 0;
+    border-top:1px solid #38bdf8;
+    background:#081727;
+    box-shadow:0 -20px 60px rgba(0,0,0,.55);
+  }
+
+  .infini-image-sheet h3{
+    margin:0 0 16px;
+    color:white;
+    font-size:22px;
+  }
+
+  .infini-image-action{
+    width:100%;
+    margin-top:10px;
+    padding:16px;
+    border:0;
+    border-radius:15px;
+    background:#35bdf3;
+    color:#03111d;
+    font-size:17px;
+    font-weight:800;
+  }
+
+  .infini-image-action.danger{
+    background:#2a3b4d;
+    color:#ff8da1;
+  }
+
+  .infini-image-action.cancel{
+    background:#142638;
+    color:white;
+  }
+</style>
+
+<input
+  id="infiniCardImageInput"
+  type="file"
+  accept="image/*"
+  hidden
+>
+
+<div id="infiniCardImageMenu">
+  <div class="infini-image-sheet">
+    <h3 id="infiniCardImageTitle">แก้ไขรูปการ์ด</h3>
+
+    <button
+      id="infiniChooseCardImage"
+      class="infini-image-action"
+      type="button"
+    >
+      อัปโหลด / เปลี่ยนรูป
+    </button>
+
+    <button
+      id="infiniRemoveCardImage"
+      class="infini-image-action danger"
+      type="button"
+    >
+      ลบรูป
+    </button>
+
+    <button
+      id="infiniCloseCardImage"
+      class="infini-image-action cancel"
+      type="button"
+    >
+      ยกเลิก
+    </button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const cards = [...document.querySelectorAll(".card")];
+  const menu = document.getElementById("infiniCardImageMenu");
+  const input = document.getElementById("infiniCardImageInput");
+  const title = document.getElementById("infiniCardImageTitle");
+
+  let activeCard = null;
+  let activeImage = null;
+  let activeKey = "";
+
+  function makeKey(card, index) {
+    const stableKey = card.dataset.cardKey || String(index);
+    return "infini-service-card-image:v2:" + stableKey;
+  }
+
+  function openMenu(card, image, key) {
+    activeCard = card;
+    activeImage = image;
+    activeKey = key;
+
+    title.textContent =
+      "แก้ไขรูป: " +
+      (card.querySelector("h3")?.textContent?.trim() || "การ์ด");
+
+    menu.classList.add("open");
+  }
+
+  function closeMenu() {
+    menu.classList.remove("open");
+  }
+
+  function setImage(media, image, value) {
+    if (value) {
+      image.src = value;
+      media.classList.add("has-image");
+    } else {
+      image.removeAttribute("src");
+      media.classList.remove("has-image");
+    }
+  }
+
+  function resizeImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onerror = reject;
+
+      reader.onload = () => {
+        const source = new Image();
+
+        source.onerror = reject;
+
+        source.onload = () => {
+          const maxSide = 1200;
+          let width = source.width;
+          let height = source.height;
+
+          if (Math.max(width, height) > maxSide) {
+            const scale = maxSide / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+
+          const context = canvas.getContext("2d");
+          context.drawImage(source, 0, 0, width, height);
+
+          resolve(canvas.toDataURL("image/jpeg", 0.86));
+        };
+
+        source.src = reader.result;
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  cards.forEach((card, index) => {
+    const icon = card.querySelector(".icon");
+    const media = document.createElement("div");
+    const image = document.createElement("img");
+    const key = makeKey(card, index);
+
+    media.className = "card-media";
+    image.className = "card-uploaded-image";
+    image.alt = "";
+
+    media.appendChild(image);
+
+    if (icon) {
+      media.appendChild(icon);
+    }
+
+    card.insertBefore(media, card.firstChild);
+
+    const legacyKeys = [
+      "infini-service-card-image:0:Creative Studio:http://127.0.0.1:8033/workspace",
+      "infini-service-card-image:1:AI Workroom:http://127.0.0.1:8033/control-room",
+      "infini-service-card-image:2:Media Library:http://127.0.0.1:8032/wc",
+      "infini-service-card-image:3:Business Hub:http://127.0.0.1:8032/workspace",
+      "infini-service-card-image:4:Market Space:http://127.0.0.1:8032/zone/shop",
+      "infini-service-card-image:5:Community:http://127.0.0.1:8032/wc"
+    ];
+
+    let saved = localStorage.getItem(key);
+    if (!saved && legacyKeys[index]) {
+      saved = localStorage.getItem(legacyKeys[index]);
+      if (saved) localStorage.setItem(key, saved);
+    }
+    setImage(media, image, saved);
+
+    let timer = null;
+    let startX = 0;
+    let startY = 0;
+    let longPressed = false;
+
+    card.addEventListener("pointerdown", event => {
+      startX = event.clientX;
+      startY = event.clientY;
+      longPressed = false;
+
+      timer = setTimeout(() => {
+        timer = null;
+        longPressed = true;
+        navigator.vibrate?.(35);
+        openMenu(card, image, key);
+      }, 650);
+    });
+
+    card.addEventListener("pointermove", event => {
+      if (
+        Math.abs(event.clientX - startX) > 12 ||
+        Math.abs(event.clientY - startY) > 12
+      ) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    });
+
+    ["pointerup", "pointercancel", "pointerleave"].forEach(name => {
+      card.addEventListener(name, () => {
+        clearTimeout(timer);
+        timer = null;
+      });
+    });
+
+    card.addEventListener("click", event => {
+      if (longPressed) {
+        event.preventDefault();
+        event.stopPropagation();
+        longPressed = false;
+      }
+    });
+  });
+
+  document
+    .getElementById("infiniChooseCardImage")
+    .addEventListener("click", () => {
+      input.value = "";
+      input.click();
+    });
+
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+
+    if (!file || !activeCard || !activeImage) {
+      return;
+    }
+
+    try {
+      const value = await resizeImage(file);
+      const media = activeCard.querySelector(".card-media");
+
+      localStorage.setItem(activeKey, value);
+      setImage(media, activeImage, value);
+      closeMenu();
+    } catch (error) {
+      alert("เปิดรูปไม่สำเร็จ");
+    }
+  });
+
+  document
+    .getElementById("infiniRemoveCardImage")
+    .addEventListener("click", () => {
+      if (!activeCard || !activeImage) {
+        return;
+      }
+
+      localStorage.removeItem(activeKey);
+      setImage(
+        activeCard.querySelector(".card-media"),
+        activeImage,
+        ""
+      );
+      closeMenu();
+    });
+
+  document
+    .getElementById("infiniCloseCardImage")
+    .addEventListener("click", closeMenu);
+
+  menu.addEventListener("click", event => {
+    if (event.target === menu) {
+      closeMenu();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

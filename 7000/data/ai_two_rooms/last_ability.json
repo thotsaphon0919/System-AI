@@ -1,0 +1,24 @@
+{
+  "goal": "",
+  "style_name": "Luxury Cyberpunk",
+  "color": "เขียว",
+  "scene_note": "",
+  "product_note": "",
+  "sheet_pattern": "basic",
+  "scene_file": {
+    "name": "4431.png",
+    "url": "/ai-ability-room/file/scene_3bb4c33e2b4341a3b8da36c395aa3ee6.png",
+    "kind": "scene"
+  },
+  "product_file": {
+    "name": "4548.png",
+    "url": "/ai-ability-room/file/product_3ed659cd8bac42cbb127ca362ee40b9a.png",
+    "kind": "product"
+  },
+  "rendered_sheet": {
+    "name": "render_42e01d63edd347ae8635be50b37080b8.png",
+    "url": "/ai-ability-room/file/render_42e01d63edd347ae8635be50b37080b8.png",
+    "kind": "rendered_sheet"
+  },
+  "result": "AI ABILITY ROOM OUTPUT\n\nโจทย์ที่ผู้ใช้ต้องการ:\n\n\nสไตล์ที่เลือก:\nLuxury Cyberpunk\n\nสีหลัก:\nเขียว\n\nข้อมูลรูปฉาก:\nรูปฉากจริง: /ai-ability-room/file/scene_3bb4c33e2b4341a3b8da36c395aa3ee6.png\nรูปสินค้าจริง: /ai-ability-room/file/product_3ed659cd8bac42cbb127ca362ee40b9a.png\nแพทเทิร์นแผ่น: basic\n\nข้อมูลรูปสินค้า/ของที่จะวาง:\n\n\nดึงจากห้องความรู้: KNOWLEDGE\n- ใช้กฎพื้นฐาน: สินค้าต้องเด่น อ่านง่าย ไม่รก และข้อความห้ามบังของหลัก\n\nข้อดีที่ต้องรักษา:\n- งานต้องดูเป็นระบบ มีจุดขายชัด และเข้ากับพื้นที่ INFINI\n\nข้อเสีย/สิ่งที่ห้าม:\n- ห้ามภาพรก ห้ามสีมั่ว ห้ามทำให้สินค้า/โลโก้อ่านไม่ออก\n\nดึงจากห้องความรู้: DESIGN SYSTEM\nTheme: Luxury Cyberpunk\nPrimary Color: Purple\nAccent Color: Orange\nBackground: Dark / Black\nCorner Radius: 24 px\nGlass Effect: ON\nShadow: Soft Glow\nSpacing: 24 px\nFont: Inter / Modern Sans\n\nดึงจากห้องความรู้: COMPOSITION RULES\nHeader: 25%\nContent: 60%\nBottom Nav: 15%\nCard Columns: 2\nGap: 16 px\nGlow Level: 20%\n\nดึงจากห้องความรู้: VISUAL DNA\nFeeling: premium, futuristic, self-managed digital space\nLuxury: high\nFuture: high\nLine Weight: thin neon line with strong border focus\nCard Style: rounded dark glass card with neon glow\nIcon Style: simple futuristic line icon\nCamera Angle: front mobile UI / slight depth\nLighting: purple-blue neon with orange accent\nTexture: glass, metal, digital glow\nAvoid: messy, cheap, flat, unreadable, too many random colors\n\nReference Images ในคลัง: 0 รูป\nAsset Library ในคลัง: 0 รูป\n\nคำสั่งเจน:\nสร้างงานจัดร้าน/แผ่นโชว์สินค้า โดยใช้ฉากเป็นพื้นที่หลัก ใช้สินค้าเป็นพระเอก\nรักษา Design System และ Visual DNA ให้เหมือนลายเซ็นเดียวกันทุกครั้ง\nจัดองค์ประกอบตาม Composition Rules\nทำให้สินค้าเด่น ข้อความอ่านง่าย สีไม่หลุดธีม และภาพพร้อมใช้ใน INFINI Space Box\n\n<hr><h3>ผลลัพธ์จัดแผ่นออฟไลน์</h3><img src=\"/ai-ability-room/file/render_42e01d63edd347ae8635be50b37080b8.png\" style=\"width:100%;max-width:520px;border-radius:22px;margin:10px 0;border:1px solid #ff9f22;\"><p><b>ไฟล์ผลลัพธ์:</b> /ai-ability-room/file/render_42e01d63edd347ae8635be50b37080b8.png</p>\n\n<hr><h3>รูปที่ใช้สร้างงาน</h3><p><b>ฉาก:</b></p><img src=\"/ai-ability-room/file/scene_3bb4c33e2b4341a3b8da36c395aa3ee6.png\" style=\"width:100%;max-width:420px;border-radius:18px;margin:8px 0;\"><p><b>สินค้า:</b></p><img src=\"/ai-ability-room/file/product_3ed659cd8bac42cbb127ca362ee40b9a.png\" style=\"width:100%;max-width:260px;border-radius:18px;margin:8px 0;\"><p><b>Pattern:</b> basic</p>"
+}

@@ -1,0 +1,41 @@
+# Keep the Docker build context (and image) small. Same rationale as
+# .gitignore — user-uploaded media is restored from Cloudinary at
+# runtime, not baked into the image.
+
+.git/
+.gitattributes
+.gitignore
+
+**/uploads/
+**/uploads/**
+7000/ai_shop_uploads/
+7000/id_entry_7000_uploads/
+7000/id_home_uploads/
+8046/ad_market_uploads/
+8046/home_uploads/
+8046/dashboard_uploads/
+
+# Exception: real base/default media for ad & reward templates, and
+# recovered real uploads for user_bb290f5bb6f4 — see .gitignore for the
+# full explanation.
+!8046/uploads/
+!8046/uploads/normal_ad_media/
+!8046/uploads/normal_ad_media/**
+!8046/uploads/normal_reward_media/
+!8046/uploads/normal_reward_media/**
+!7000/uploads/
+!7000/uploads/user_bb290f5bb6f4/
+!7000/uploads/user_bb290f5bb6f4/**
+
+__pycache__/
+**/__pycache__/
+*.pyc
+.DS_Store
+*.tmp
+
+# Local/dev state — regenerated at runtime
+8032/data/users.json
+8032/data/infini_session_secret.txt
+7000/id_entry_7000_state.json
+7000/data/subpage_voice_api.json
+7000/data/subpage_voice_trading_rules.json

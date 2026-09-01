@@ -1,0 +1,1151 @@
+from fastapi import FastAPI, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+import uvicorn
+
+app = FastAPI(title="INFINI Point Tower")
+
+USER_POINTS = 12450
+
+STYLE = """
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:radial-gradient(circle at top,#231052,#050611 55%);
+ color:#fff;font-family:Arial,sans-serif
+}
+.wrap{max-width:1000px;margin:auto;padding:18px}
+header{
+ display:flex;justify-content:space-between;align-items:center;
+ padding:16px;border:1px solid #864aff;border-radius:18px;
+ background:#0d1022;margin-bottom:18px
+}
+.logo{font-size:22px;font-weight:bold;color:#b96cff}
+.points{color:#62dcff}
+.panel{
+ background:#0d1124;border:1px solid #7139c9;border-radius:18px;
+ padding:18px;margin-bottom:16px
+}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{
+ display:block;padding:18px;min-height:130px;border-radius:16px;
+ background:linear-gradient(145deg,#11162d,#221448);
+ border:1px solid #7d45db;color:white;text-decoration:none
+}
+.card:hover{box-shadow:0 0 20px #863fff}
+.card h3{margin:0 0 8px;color:#d8b8ff}
+.card p{color:#aaa6be}
+.btn{
+ display:inline-block;padding:13px 18px;background:#7432d7;
+ border:1px solid #aa71ff;border-radius:12px;color:white;
+ text-decoration:none;font-weight:bold
+}
+.btn.alt{background:transparent}
+.list{display:grid;gap:14px}
+.row{
+ display:grid;grid-template-columns:150px 1fr auto;
+ gap:14px;align-items:center
+}
+.placeholder{
+ min-height:100px;border-radius:12px;background:
+ linear-gradient(135deg,#301277,#071328);
+ display:grid;place-items:center;color:#c7a4ff
+}
+input,textarea,select{
+ width:100%;padding:13px;margin-bottom:10px;
+ border-radius:10px;border:1px solid #6738ae;
+ background:#080c19;color:white
+}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.summary div{text-align:center;padding:14px}
+nav{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.media{
+ min-height:65vh;display:grid;place-items:center;
+ background:#090c19;border:1px solid #6e3ac2;border-radius:18px;
+ font-size:28px;text-align:center;padding:20px
+}
+.controls{
+ display:grid;grid-template-columns:repeat(4,1fr);
+ gap:10px;margin-top:12px
+}
+@media(max-width:700px){
+ .grid{grid-template-columns:1fr}
+ .cols{grid-template-columns:1fr}
+ .row{grid-template-columns:100px 1fr}
+ .row .action{grid-column:1/-1}
+ .summary{grid-template-columns:1fr}
+}
+</style>
+"""
+
+def page(title, content):
+    return HTMLResponse(f"""
+    <!doctype html>
+    <html lang="th">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>{title}</title>
+      {STYLE}
+    </head>
+    <body>
+      <div class="wrap">
+        <header>
+          <a href="/tower" class="logo">∞ INFINI POINT TOWER</a>
+          <div class="points">MY POINT {USER_POINTS:,} INF</div>
+        </header>
+        {content}
+      </div>
+    </body>
+    </html>
+    """)
+
+@app.get("/")
+def root():
+    return RedirectResponse("/tower")
+
+# หน้า 1
+@app.get("/tower")
+def tower():
+    return page("Point Tower", """
+    <div class="panel">
+      <h1>INFINI POINT TOWER</h1>
+      <p>สะสมแต้ม สร้างแคมเปญ ชมโฆษณา และแลกรางวัล</p>
+    </div>
+
+    <div class="grid">
+      <a class="card" href="/tower/dashboard">
+        <h3>ENTER TOWER</h3>
+        <p>เข้าสู่หน้าหลักของตึก</p>
+      </a>
+
+      <a class="card" href="/tower/ad-market">
+        <h3>HOW TO EARN</h3>
+        <p>เลือกชมโฆษณาเพื่อรับแต้ม</p>
+      </a>
+
+      <a class="card" href="/tower/rewards">
+        <h3>REDEEM REWARDS</h3>
+        <p>เลือกและแลกของรางวัล</p>
+      </a>
+    </div>
+    """)
+
+# หน้า 2
+@app.get("/tower/dashboard")
+def dashboard():
+    return page("Dashboard", """
+    <div class="panel">
+      <h1>Point Tower Dashboard</h1>
+      <p>เลือกสิ่งที่ต้องการทำ</p>
+    </div>
+
+    <div class="grid">
+      <a class="card" href="/tower/transaction?type=buy-point">
+        <h3>ซื้อแต้ม</h3><p>เข้าสู่ห้องธุรกรรม</p>
+      </a>
+
+      <a class="card" href="/tower/transaction?type=create-campaign">
+        <h3>สร้างแคมเปญ</h3><p>อัปโหลดและตั้งค่ากิจกรรม</p>
+      </a>
+
+      <a class="card" href="/tower/ad-market">
+        <h3>เลือกชมโฆษณา</h3><p>เลือกหมวดและรับแต้ม</p>
+      </a>
+
+      <a class="card" href="/tower/rewards">
+        <h3>แลกรางวัล</h3><p>ดูของรางวัลพิเศษ</p>
+      </a>
+
+      <a class="card" href="/tower/transaction?type=history">
+        <h3>ประวัติ</h3><p>ดูรายการย้อนหลัง</p>
+      </a>
+
+      <a class="card" href="/tower/transaction?type=wallet">
+        <h3>MY POINT</h3><p>ดูกระเป๋าแต้ม</p>
+      </a>
+    </div>
+    """)
+
+# หน้า 3
+@app.get("/tower/ad-market")
+def ad_market():
+    categories = [
+      ("tech","Tech & Gadget"),
+      ("fashion","Fashion"),
+      ("auto","Auto & Vehicle"),
+      ("food","Food & Drink"),
+      ("game","Game & Entertainment"),
+      ("finance","Finance & Investment"),
+      ("travel","Travel & Hotel"),
+      ("education","Education"),
+      ("lifestyle","Lifestyle"),
+    ]
+
+    cards = "".join(
+      f'<a class="card" href="/tower/ad-market/{key}">'
+      f'<h3>{name}</h3><p>ดูรายการโฆษณา</p></a>'
+      for key,name in categories
+    )
+
+    return page("AD Market", f"""
+    <div class="panel">
+      <h1>INFINI AD MARKET</h1>
+      <p>เลือกหัวข้อหรือโซนโฆษณา</p>
+    </div>
+    <div class="grid">{cards}</div>
+    """)
+
+# หน้า 4
+@app.get("/tower/ad-market/{category}")
+def ad_list(category: str):
+    rows = ""
+    for i in range(1,7):
+        rows += f"""
+        <div class="panel row">
+          <div class="placeholder" style="padding:0;overflow:hidden">
+    <img src="/normal-ad-media/{category}-{i}"
+         alt="รูปโฆษณา"
+         style="width:100%;height:190px;object-fit:cover;display:block"
+         onerror="this.style.display='none'">
+</div>
+          <div>
+            <h3>โฆษณา {category.upper()} #{i}</h3>
+            <p>ดู 30 วินาที</p>
+            <strong style="color:#ffd66d">รับ 5 INF</strong>
+            <p>งบคงเหลือ 8,500 INF</p>
+          </div>
+          <div class="action">
+            <a class="btn" href="/tower/ad/{category}-{i}">
+              ดูโฆษณา
+            </a>
+          </div>
+        </div>
+        """
+
+    return page("รายการโฆษณา", f"""
+    <div class="panel">
+      <h1>{category.upper()}</h1>
+      <p>หนึ่งโฆษณาต่อหนึ่งแถว เลื่อนลงเพื่อดูรายการ</p>
+    </div>
+    <div class="list">{rows}</div>
+    """)
+
+# หน้า 5
+@app.get("/tower/ad/{ad_id}")
+def watch_ad(ad_id: str):
+    return page("ดูโฆษณา", f"""
+    <div class="media" style="padding:0;overflow:hidden">
+            <img src="/normal-ad-media/{ad_id}"
+                 alt="สื่อโฆษณา"
+                 style="width:100%;height:auto;min-height:360px;object-fit:contain;display:block"
+                 onerror="this.style.display='none'">
+        </div>
+
+        <div class="panel">
+            <p>รหัสโฆษณา: {ad_id}</p>
+            <a class="btn"
+               href="/normal-ad-upload/{ad_id}?back_url=/tower/ad/{ad_id}">
+               อัปโหลดหรือเปลี่ยนสื่อ
+            </a>
+        </div>
+
+        <div class="controls">
+      <a class="btn alt" href="javascript:history.back()">ย้อนกลับ</a>
+      <a class="btn alt" href="/tower">หน้าโฮม</a>
+      <a class="btn"
+         href="/tower/transaction?type=ad-view&ref={ad_id}">
+         ห้องธุรกรรม
+      </a>
+      <a class="btn alt" href="/tower/ad-market">ถัดไป</a>
+    </div>
+    """)
+
+# ห้องธุรกรรมร่วม
+@app.get("/tower/transaction")
+def transaction(type: str = "general", ref: str = ""):
+    return page("ห้องธุรกรรม", f"""
+    <div class="panel">
+      <h1>ห้องธุรกรรมร่วม</h1>
+      <p>ประเภท: <strong>{type}</strong></p>
+      <p>รายการอ้างอิง: <strong>{ref or "-"}</strong></p>
+    </div>
+
+    <div class="panel">
+      <h2>อัปโหลดและกรอกข้อมูลหลัก</h2>
+
+      <input placeholder="ชื่อรายการ">
+      <select>
+        <option>เลือกโซนหรือหมวด</option>
+        <option>Tech & Gadget</option>
+        <option>Fashion</option>
+        <option>Food & Drink</option>
+        <option>Everything</option>
+      </select>
+      <input placeholder="แต้มที่ใช้">
+      <input placeholder="แต้มที่ผู้ชมได้รับ">
+      <input placeholder="แต้มคงเหลือ">
+      <input placeholder="ระยะเวลาที่ต้องดู">
+      <input placeholder="ลิงก์ปลายทาง">
+      <textarea placeholder="รายละเอียดเพิ่มเติม"></textarea>
+
+      <a class="btn" href="/tower/dashboard">
+        บันทึกข้อมูลจำลอง
+      </a>
+    </div>
+    """)
+
+# หน้ารางวัล
+REWARD_ITEMS = [
+    ("watch",    "INFINI WATCH X1",       8900, 18),
+    ("shoe",     "INFINI SNEAKER PRO",    6500, 24),
+    ("gift",     "INFINI GIFT CARD",      1000, 200),
+    ("bag",      "INFINI BACKPACK",       3500, 35),
+    ("voucher",  "HOTEL VOUCHER",         2800, 50),
+    ("vr",       "VR EXPERIENCE",         1200, 40),
+    ("reward07", "INFINI REWARD 07",      1500, 30),
+    ("reward08", "INFINI REWARD 08",      1800, 30),
+    ("reward09", "INFINI REWARD 09",      2100, 25),
+    ("reward10", "INFINI REWARD 10",      2400, 25),
+    ("reward11", "INFINI REWARD 11",      2700, 20),
+    ("reward12", "INFINI REWARD 12",      3000, 20),
+    ("reward13", "INFINI REWARD 13",      3300, 18),
+    ("reward14", "INFINI REWARD 14",      3600, 18),
+    ("reward15", "INFINI REWARD 15",      3900, 15),
+    ("reward16", "INFINI REWARD 16",      4200, 15),
+    ("reward17", "INFINI REWARD 17",      4500, 12),
+    ("reward18", "INFINI REWARD 18",      4800, 12),
+    ("reward19", "INFINI REWARD 19",      5200, 10),
+    ("reward20", "INFINI REWARD 20",      5900, 10),
+]
+
+def get_reward_item(reward_id: str):
+    return next(
+        (item for item in REWARD_ITEMS if item[0] == reward_id),
+        None
+    )
+
+def reward_media_html(reward_id: str, large: bool = False):
+    height = "420px" if large else "300px"
+    media_path = f"/normal-reward-media/{reward_id}"
+
+    return f"""
+    <div style="
+        position:relative;
+        width:100%;
+        min-height:220px;
+        overflow:hidden;
+        border-radius:24px;
+        background:linear-gradient(145deg,#11142b,#070914);
+        border:1px solid rgba(154,87,255,.55);
+    ">
+        <img
+            src="{media_path}"
+            alt="สื่อรางวัล {reward_id}"
+            style="
+                width:100%;
+                height:auto;
+                object-fit:contain;
+                background:#050611;
+                display:block;
+            "
+            onerror="
+                this.style.display='none';
+                this.nextElementSibling.style.display='flex';
+            "
+        >
+        <div style="
+            display:none;
+            width:100%;
+            height:100%;
+            align-items:center;
+            justify-content:center;
+            text-align:center;
+            color:#ae8cff;
+            font-weight:800;
+            padding:20px;
+            box-sizing:border-box;
+        ">
+            แตะเข้าเพื่อดูรายละเอียด
+        </div>
+    </div>
+    """
+
+# หน้ารางวัล 20 ช่อง
+@app.get("/tower/rewards")
+def rewards():
+    cards = ""
+
+    for rid, name, cost, stock in REWARD_ITEMS:
+        cards += f"""
+        <div class="panel card" style="overflow:hidden">
+            <a href="/tower/redeem/{rid}"
+               style="text-decoration:none;color:inherit;display:block">
+                {normal_reward_media_html(rid)}
+                <h3>{name}</h3>
+                <p>เหลือ {stock} ชิ้น</p>
+                <strong style="color:#ffd66d">{cost:,} INF</strong>
+            </a>
+
+            <br><br>
+
+            <a class="btn" href="/tower/redeem/{rid}">
+                ดูรายละเอียด
+            </a>
+        </div>
+        """
+
+    return page("แลกรางวัล", f"""
+    <div class="panel">
+        <h1>แลกรางวัลพิเศษ</h1>
+        <p>เลือกของรางวัลที่ต้องการ</p>
+    </div>
+
+    <div class="grid">
+        {cards}
+    </div>
+    """)
+
+# หน้ารูปใหญ่และรายละเอียดของแต่ละช่อง
+@app.get("/tower/redeem/{reward_id}")
+def redeem_form(reward_id: str):
+    item = get_reward_item(reward_id)
+
+    if item is None:
+        return page("ไม่พบรางวัล", """
+        <div class="panel">
+            <h1>ไม่พบรางวัลนี้</h1>
+            <a class="btn" href="/tower/rewards">กลับหน้ารางวัล</a>
+        </div>
+        """)
+
+    rid, name, cost, stock = item
+    remaining = USER_POINTS - cost
+
+    return page("ยืนยันการแลก", f"""
+    <div class="panel">
+        <h1>ยืนยันการแลกของรางวัล</h1>
+        <p>รหัสรางวัล: {rid}</p>
+    </div>
+
+    <div class="cols">
+        <div class="panel">
+            {normal_reward_media_html(rid, large=True)}
+
+            <a class="btn"
+               href="/normal-reward-upload/{rid}?back_url=/tower/redeem/{rid}">
+                อัปโหลดหรือเปลี่ยนรูป
+            </a>
+
+            <h2>{name}</h2>
+            <p>จำนวนคงเหลือ: {stock} ชิ้น</p>
+            <p>ใช้แต้ม: <strong style="color:#ffd66d">{cost:,} INF</strong></p>
+        </div>
+
+        <div class="panel">
+            <div class="summary">
+                <div class="panel">
+                    ก่อนแลก<br>
+                    <strong>{USER_POINTS:,} INF</strong>
+                </div>
+
+                <div class="panel">
+                    ใช้<br>
+                    <strong>{cost:,} INF</strong>
+                </div>
+
+                <div class="panel">
+                    คงเหลือ<br>
+                    <strong>{remaining:,} INF</strong>
+                </div>
+            </div>
+
+            <form method="post" action="/tower/redeem/{reward_id}">
+                <input
+                    name="recipient_name"
+                    placeholder="ชื่อ-นามสกุลผู้รับ"
+                    required
+                >
+
+                <input
+                    name="phone"
+                    placeholder="เบอร์โทรศัพท์"
+                    required
+                >
+
+                <input
+                    name="email"
+                    type="email"
+                    placeholder="อีเมล"
+                    required
+                >
+
+                <textarea
+                    name="address"
+                    placeholder="ที่อยู่จัดส่ง"
+                ></textarea>
+
+                <textarea
+                    name="note"
+                    placeholder="หมายเหตุเพิ่มเติม"
+                ></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="accept"
+                        required
+                        style="width:auto"
+                    >
+                    ยอมรับเงื่อนไขการแลก
+                </label>
+
+                <br><br>
+
+                <button class="btn" type="submit">
+                    ยืนยันการแลก
+                </button>
+            </form>
+        </div>
+    </div>
+    """)
+
+@app.post("/tower/redeem/{reward_id}")
+def redeem_submit(
+    reward_id: str,
+    recipient_name: str = Form(...),
+    phone: str = Form(...),
+    email: str = Form(...),
+    address: str = Form(""),
+    note: str = Form(""),
+    accept: str = Form(...)
+):
+    return RedirectResponse(
+      f"/tower/success?reward={reward_id}",
+      status_code=303
+    )
+
+# หน้าสำเร็จ
+@app.get("/tower/success")
+def success(reward: str):
+    return page("สำเร็จ", f"""
+    <div class="panel" style="text-align:center;padding:50px">
+      <h1>ทำรายการสำเร็จ</h1>
+      <p>รางวัล: {reward}</p>
+      <p>เลขธุรกรรม: TX-INFINI-0001</p>
+      <p>
+        ตอนนี้เป็นข้อมูลจำลอง<br>
+        ระบบหักแต้มและลดจำนวนจริงค่อยเชื่อมภายหลัง
+      </p>
+      <a class="btn" href="/tower/dashboard">
+        กลับ Point Tower
+      </a>
+    </div>
+    """)
+
+from fastapi import File, UploadFile
+from pathlib import Path
+import shutil
+import uuid
+
+
+CONTROL_UPLOAD_DIR = Path.home() / "downloads" / "infini_point_tower" / "uploads"
+CONTROL_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@app.get("/tower/control-room")
+def control_room():
+    return page("INFINI Point Tower Control Room", """
+    <div class="panel">
+      <h1>∞ INFINI POINT TOWER CONTROL ROOM</h1>
+      <p>
+        อัปโหลด จัดหมวด ตั้งค่า และเชื่อมไปยังหน้าที่ต้องการ
+      </p>
+    </div>
+
+    <form method="post"
+          action="/tower/control-room"
+          enctype="multipart/form-data">
+
+      <!-- 1. เลือกปลายทาง -->
+      <div class="panel">
+        <h2>1. เลือกปลายทาง</h2>
+        <p>เลือกหน้าที่ต้องการส่งข้อมูลไปแสดง</p>
+
+        <select name="destination"
+                id="destination"
+                onchange="changeControlFields()"
+                required>
+          <option value="">— เลือกหน้าปลายทาง —</option>
+          <option value="tower">หน้าแรก Point Tower</option>
+          <option value="dashboard">Dashboard</option>
+          <option value="ad-market">AD Market</option>
+          <option value="ad-list">รายการโฆษณา</option>
+          <option value="ad-view">หน้าดูโฆษณา</option>
+          <option value="reward">หน้าแลกรางวัล</option>
+          <option value="campaign">หน้าแคมเปญ</option>
+        </select>
+      </div>
+
+      <div class="cols">
+
+        <div>
+          <!-- 2. อัปโหลดสื่อ -->
+          <div class="panel">
+            <h2>2. อัปโหลดสื่อ</h2>
+
+            <select name="media_type" required>
+              <option value="image">รูปภาพ</option>
+              <option value="video">วิดีโอ</option>
+              <option value="cover">ภาพปก</option>
+              <option value="banner">แบนเนอร์</option>
+            </select>
+
+            <input type="file"
+                   name="media"
+                   id="mediaInput"
+                   accept="image/*,video/*"
+                   onchange="previewMedia(event)"
+                   required>
+
+            <div id="uploadPreview"
+                 class="placeholder"
+                 style="min-height:220px">
+              ตัวอย่างรูปหรือวิดีโอ
+            </div>
+          </div>
+
+          <!-- 3. ข้อมูลหลัก -->
+          <div class="panel">
+            <h2>3. ข้อมูลหลัก</h2>
+
+            <label>ชื่อรายการ</label>
+            <input name="title"
+                   id="titleInput"
+                   placeholder="ชื่อโฆษณา รางวัล หรือแคมเปญ"
+                   oninput="updatePreview()"
+                   required>
+
+            <label>หัวข้อ</label>
+            <input name="headline"
+                   placeholder="ข้อความหัวเรื่อง">
+
+            <label>คำอธิบาย</label>
+            <textarea name="description"
+                      id="descriptionInput"
+                      placeholder="รายละเอียดของรายการ"
+                      oninput="updatePreview()"></textarea>
+
+            <label>หมวดหรือโซน</label>
+            <select name="category">
+              <option value="everything">Everything</option>
+              <option value="tech">Tech &amp; Gadget</option>
+              <option value="fashion">Fashion</option>
+              <option value="auto">Auto &amp; Vehicle</option>
+              <option value="food">Food &amp; Drink</option>
+              <option value="game">Game &amp; Entertainment</option>
+              <option value="finance">Finance &amp; Investment</option>
+              <option value="health">Health &amp; Beauty</option>
+              <option value="travel">Travel &amp; Hotel</option>
+              <option value="real-estate">Real Estate</option>
+              <option value="education">Education</option>
+              <option value="lifestyle">Lifestyle</option>
+            </select>
+
+            <label>สถานะ</label>
+            <select name="status">
+              <option value="draft">ฉบับร่าง</option>
+              <option value="review">รอตรวจสอบ</option>
+              <option value="active">เผยแพร่</option>
+              <option value="closed">ปิดรายการ</option>
+            </select>
+          </div>
+
+          <!-- 4A. ข้อมูลโฆษณา -->
+          <div class="panel"
+               id="adFields"
+               style="display:none">
+            <h2>4. ข้อมูลเฉพาะโฆษณา</h2>
+
+            <label>แต้มที่ใช้สร้างแคมเปญ</label>
+            <input type="number"
+                   name="campaign_points"
+                   min="0"
+                   value="0">
+
+            <label>แต้มที่ผู้ชมได้รับ</label>
+            <input type="number"
+                   name="viewer_reward"
+                   min="0"
+                   value="0">
+
+            <label>งบหรือแต้มคงเหลือ</label>
+            <input type="number"
+                   name="budget_left"
+                   min="0"
+                   value="0">
+
+            <label>เวลาที่ต้องดู</label>
+            <select name="watch_seconds">
+              <option value="15">15 วินาที</option>
+              <option value="30">30 วินาที</option>
+              <option value="60">1 นาที</option>
+              <option value="120">2 นาที</option>
+            </select>
+
+            <label>ลิงก์ปลายทาง</label>
+            <input type="url"
+                   name="target_url"
+                   placeholder="https://...">
+          </div>
+
+          <!-- 4B. ข้อมูลรางวัล -->
+          <div class="panel"
+               id="rewardFields"
+               style="display:none">
+            <h2>4. ข้อมูลเฉพาะของรางวัล</h2>
+
+            <label>แต้มที่ใช้แลก</label>
+            <input type="number"
+                   name="reward_cost"
+                   id="rewardCost"
+                   min="0"
+                   value="0"
+                   oninput="updatePointSummary()">
+
+            <label>จำนวนของคงเหลือ</label>
+            <input type="number"
+                   name="reward_stock"
+                   min="0"
+                   value="0">
+
+            <label>ประเภทของรางวัล</label>
+            <select name="reward_type">
+              <option value="physical">สินค้าจริง</option>
+              <option value="digital">ดิจิทัล</option>
+              <option value="voucher">คูปอง</option>
+              <option value="experience">ประสบการณ์</option>
+            </select>
+
+            <label>วิธีรับของ</label>
+            <select name="delivery_method">
+              <option value="shipping">จัดส่งถึงที่อยู่</option>
+              <option value="email">ส่งทางอีเมล</option>
+              <option value="pickup">รับด้วยตนเอง</option>
+            </select>
+
+            <label>เงื่อนไขการแลก</label>
+            <textarea name="reward_terms"
+                      placeholder="ระบุเงื่อนไขของรางวัล"></textarea>
+          </div>
+
+          <!-- 4C. ข้อมูลแคมเปญ -->
+          <div class="panel"
+               id="campaignFields"
+               style="display:none">
+            <h2>4. ข้อมูลเฉพาะแคมเปญ</h2>
+
+            <label>งบแคมเปญ</label>
+            <input type="number"
+                   name="campaign_budget"
+                   min="0"
+                   value="0">
+
+            <label>วันเริ่มต้น</label>
+            <input type="date"
+                   name="start_date">
+
+            <label>วันสิ้นสุด</label>
+            <input type="date"
+                   name="end_date">
+
+            <label>กลุ่มเป้าหมาย</label>
+            <input name="target_audience"
+                   placeholder="เช่น ผู้สนใจเทคโนโลยี อายุ 18–35 ปี">
+          </div>
+        </div>
+
+        <!-- 5. ตัวอย่าง -->
+        <div>
+          <div class="panel"
+               style="position:sticky;top:14px">
+            <h2>5. ตัวอย่างก่อนเผยแพร่</h2>
+
+            <div class="panel">
+              <div id="cardPreview"
+                   class="placeholder"
+                   style="min-height:320px">
+                ตัวอย่างสื่อ
+              </div>
+
+              <h2 id="previewTitle"
+                  style="margin-top:18px">
+                ชื่อรายการ
+              </h2>
+
+              <p id="previewDescription">
+                รายละเอียดจะแสดงตรงนี้
+              </p>
+
+              <a class="btn"
+                 style="width:100%;text-align:center">
+                ดูรายการ
+              </a>
+            </div>
+
+            <div class="panel">
+              <h3>สรุปการใช้แต้ม</h3>
+
+              <p>
+                แต้มคงเหลือปัจจุบัน
+                <strong style="float:right">
+                  12,450 INF
+                </strong>
+              </p>
+
+              <p>
+                แต้มที่ใช้
+                <strong id="previewCost"
+                        style="float:right;color:#ff6978">
+                  0 INF
+                </strong>
+              </p>
+
+              <p>
+                แต้มคงเหลือหลังทำรายการ
+                <strong id="previewRemaining"
+                        style="float:right;color:#63f5a5">
+                  12,450 INF
+                </strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. ปุ่มควบคุม -->
+      <div class="panel">
+        <h2>6. ปุ่มควบคุม</h2>
+
+        <div class="grid">
+          <button class="btn alt"
+                  type="submit"
+                  name="action"
+                  value="draft">
+            บันทึกฉบับร่าง
+          </button>
+
+          <button class="btn alt"
+                  type="button"
+                  onclick="window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                  })">
+            ดูตัวอย่าง
+          </button>
+
+          <button class="btn"
+                  type="submit"
+                  name="action"
+                  value="publish">
+            อัปโหลดและเผยแพร่
+          </button>
+
+          <a class="btn alt"
+             href="/tower/transaction?type=control-room">
+            ห้องธุรกรรม
+          </a>
+
+          <a class="btn alt"
+             href="/tower/dashboard">
+            กลับ Dashboard
+          </a>
+        </div>
+      </div>
+    </form>
+
+    <script>
+      function changeControlFields() {
+        const value =
+          document.getElementById("destination").value;
+
+        const adFields =
+          document.getElementById("adFields");
+
+        const rewardFields =
+          document.getElementById("rewardFields");
+
+        const campaignFields =
+          document.getElementById("campaignFields");
+
+        adFields.style.display = "none";
+        rewardFields.style.display = "none";
+        campaignFields.style.display = "none";
+
+        if (
+          value === "ad-market" ||
+          value === "ad-list" ||
+          value === "ad-view"
+        ) {
+          adFields.style.display = "block";
+        }
+
+        if (value === "reward") {
+          rewardFields.style.display = "block";
+        }
+
+        if (value === "campaign") {
+          campaignFields.style.display = "block";
+        }
+      }
+
+      function previewMedia(event) {
+        const file = event.target.files[0];
+
+        if (!file) {
+          return;
+        }
+
+        const url = URL.createObjectURL(file);
+
+        const uploadPreview =
+          document.getElementById("uploadPreview");
+
+        const cardPreview =
+          document.getElementById("cardPreview");
+
+        if (file.type.startsWith("video/")) {
+          uploadPreview.innerHTML =
+            '<video controls style="width:100%;' +
+            'max-height:260px;border-radius:12px">' +
+            '<source src="' + url + '">' +
+            '</video>';
+
+          cardPreview.innerHTML =
+            '<video controls style="width:100%;' +
+            'max-height:320px;border-radius:12px">' +
+            '<source src="' + url + '">' +
+            '</video>';
+        } else {
+          uploadPreview.innerHTML =
+            '<img src="' + url + '" ' +
+            'style="width:100%;max-height:260px;' +
+            'object-fit:contain;background:#050611;border-radius:12px">';
+
+          cardPreview.innerHTML =
+            '<img src="' + url + '" ' +
+            'style="width:100%;max-height:320px;' +
+            'object-fit:contain;background:#050611;border-radius:12px">';
+        }
+      }
+
+      function updatePreview() {
+        const title =
+          document.getElementById("titleInput").value;
+
+        const description =
+          document.getElementById(
+            "descriptionInput"
+          ).value;
+
+        document.getElementById(
+          "previewTitle"
+        ).textContent = title || "ชื่อรายการ";
+
+        document.getElementById(
+          "previewDescription"
+        ).textContent =
+          description || "รายละเอียดจะแสดงตรงนี้";
+      }
+
+      function updatePointSummary() {
+        const cost =
+          Number(
+            document.getElementById(
+              "rewardCost"
+            ).value || 0
+          );
+
+        const currentPoints = 12450;
+        const remaining =
+          Math.max(0, currentPoints - cost);
+
+        document.getElementById(
+          "previewCost"
+        ).textContent =
+          cost.toLocaleString() + " INF";
+
+        document.getElementById(
+          "previewRemaining"
+        ).textContent =
+          remaining.toLocaleString() + " INF";
+      }
+    </script>
+    """)
+
+
+@app.post("/tower/control-room")
+async def control_room_submit(
+    destination: str = Form(...),
+    media_type: str = Form(...),
+    media: UploadFile = File(...),
+
+    title: str = Form(...),
+    headline: str = Form(""),
+    description: str = Form(""),
+    category: str = Form("everything"),
+    status: str = Form("draft"),
+
+    campaign_points: int = Form(0),
+    viewer_reward: int = Form(0),
+    budget_left: int = Form(0),
+    watch_seconds: int = Form(30),
+    target_url: str = Form(""),
+
+    reward_cost: int = Form(0),
+    reward_stock: int = Form(0),
+    reward_type: str = Form("physical"),
+    delivery_method: str = Form("shipping"),
+    reward_terms: str = Form(""),
+
+    campaign_budget: int = Form(0),
+    start_date: str = Form(""),
+    end_date: str = Form(""),
+    target_audience: str = Form(""),
+
+    action: str = Form("draft")
+):
+    extension = Path(
+        media.filename or "upload.bin"
+    ).suffix.lower()
+
+    allowed_extensions = {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".gif",
+        ".mp4",
+        ".mov",
+        ".webm"
+    }
+
+    if extension not in allowed_extensions:
+        return page(
+            "อัปโหลดไม่สำเร็จ",
+            """
+            <div class="panel">
+              <h1>ชนิดไฟล์ไม่รองรับ</h1>
+              <p>
+                รองรับ JPG, PNG, WEBP, GIF,
+                MP4, MOV และ WEBM
+              </p>
+              <a class="btn"
+                 href="/tower/control-room">
+                กลับห้องควบคุม
+              </a>
+            </div>
+            """
+        )
+
+    safe_filename = (
+        uuid.uuid4().hex + extension
+    )
+
+    file_path = (
+        CONTROL_UPLOAD_DIR / safe_filename
+    )
+
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(
+            media.file,
+            buffer
+        )
+
+    if action == "draft":
+        return RedirectResponse(
+            "/tower/transaction"
+            "?type=control-draft"
+            f"&ref={safe_filename}",
+            status_code=303
+        )
+
+    if destination == "tower":
+        target = "/tower"
+
+    elif destination == "dashboard":
+        target = "/tower/dashboard"
+
+    elif destination == "reward":
+        target = "/tower/rewards"
+
+    elif destination == "campaign":
+        target = (
+            "/tower/transaction"
+            "?type=campaign"
+            f"&ref={safe_filename}"
+        )
+
+    elif destination in {
+        "ad-market",
+        "ad-list",
+        "ad-view"
+    }:
+        target = (
+            f"/tower/ad-market/"
+            f"{category or 'everything'}"
+        )
+
+    else:
+        target = "/tower/dashboard"
+
+    return RedirectResponse(
+        target,
+        status_code=303
+    )
+
+# เพิ่มแผงอัปโหลดรูปหน้าแรก Point Tower
+from home_upload_panel import setup_home_upload_panel
+setup_home_upload_panel(app)
+
+
+from dashboard_upload_panel import setup_dashboard_upload_panel
+setup_dashboard_upload_panel(app)
+
+
+from ad_market_upload_panel import setup_ad_market_upload_panel
+setup_ad_market_upload_panel(app)
+
+if __name__ == "__main__":
+    uvicorn.run(
+      "main:app",
+      host="0.0.0.0",
+      port=8046,
+      reload=True
+    )
+
+from video_ad_upload import setup_video_upload
+setup_video_upload(app)
+
+from member_home import setup_member_home
+setup_member_home(app)
+
+from reward_images import setup_reward_images
+setup_reward_images(app)
+
+from normal_reward_images import setup_normal_reward_images, _media_block as _normal_reward_media_block
+setup_normal_reward_images(app)
+
+# === REWARD MEDIA COMPAT WRAPPER ===
+# ใช้ normal reward media เป็นระบบหลัก แต่รับ argument เก่าได้ด้วย
+def normal_reward_media_html(reward_id, *args, **kwargs):
+    detail = bool(kwargs.get("detail", False))
+    try:
+        return _normal_reward_media_block(str(reward_id), detail=detail)
+    except TypeError:
+        return _normal_reward_media_block(str(reward_id))
+
+
+
+from normal_ad_images import setup_normal_ad_images
+setup_normal_ad_images(app)

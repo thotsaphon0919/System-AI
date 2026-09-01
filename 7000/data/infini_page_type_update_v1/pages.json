@@ -1,0 +1,21 @@
+{
+  "pages": {
+    "1.1.1": {
+      "page_type": "auction",
+      "title": "",
+      "description": "",
+      "link": "",
+      "chat_enabled": true,
+      "comments": [],
+      "auction": {
+        "product_name": "",
+        "seller": "",
+        "start_price": "",
+        "current_price": "",
+        "end_time": "",
+        "status": "open",
+        "product_detail": ""
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "groups": {
+    "2.2": {
+      "group_no": "2.2",
+      "pages": [
+        {
+          "id": "detail_7f11786f018f",
+          "no": "2.2.1",
+          "media_url": "https://anonymous-happened-interactive-sep.trycloudflare.com/uploads/guest/1786033937_8b814919.jpg",
+          "media_type": "image",
+          "detail": "",
+          "zone": "1",
+          "messages": [],
+          "created_at": 1786033812,
+          "updated_at": 1786033949
+        }
+      ],
+      "created_at": 1786033812,
+      "updated_at": 1786034089
+    },
+    "2.1": {
+      "group_no": "2.1",
+      "pages": [
+        {
+          "id": "detail_2abd201a54ca",
+          "no": "2.1.1",
+          "media_url": "",
+          "media_type": "",
+          "detail": "",
+          "zone": "1",
+          "messages": [],
+          "created_at": 1786033845,
+          "updated_at": 1786033879
+        }
+      ],
+      "created_at": 1786033845,
+      "updated_at": 1786033879
+    }
+  }
+}

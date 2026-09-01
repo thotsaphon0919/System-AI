@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "id": "img_b811eff32131",
+      "kind": "scene",
+      "title": "ฉากโปสเตอร์",
+      "stored": "scene_7f89754940da4266bb34ca4fa69f8656.png",
+      "url": "/ai-library/file/scene_7f89754940da4266bb34ca4fa69f8656.png",
+      "created_at": 1785545656
+    },
+    {
+      "id": "img_698843c0c2af",
+      "kind": "product",
+      "title": "รองเท้า adidas",
+      "stored": "product_1276d03e540d45b99adfd40cfad36d11.jpg",
+      "url": "/ai-library/file/product_1276d03e540d45b99adfd40cfad36d11.jpg",
+      "created_at": 1785546164
+    },
+    {
+      "id": "img_eb708a7e7895",
+      "kind": "product",
+      "title": "เสื้อยืด",
+      "stored": "product_ff8c36dfb2af48c9a641a22386b3df3e.jpg",
+      "url": "/ai-library/file/product_ff8c36dfb2af48c9a641a22386b3df3e.jpg",
+      "created_at": 1785548520
+    },
+    {
+      "id": "img_26982e529a62",
+      "kind": "product",
+      "title": "กระเป๋าเป้",
+      "stored": "product_9c4383933f8e4d26a836f0ab6d6f76f7.png",
+      "url": "/ai-library/file/product_9c4383933f8e4d26a836f0ab6d6f76f7.png",
+      "created_at": 1785556177
+    },
+    {
+      "id": "img_a1ae86476e0b",
+      "kind": "generated",
+      "title": "รูปที่สร้างจาก Scene Builder",
+      "stored": "generated_a06ea203f8884b8bb99c11333deb945e.png",
+      "url": "/ai-library/file/generated_a06ea203f8884b8bb99c11333deb945e.png",
+      "created_at": 1785556331
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+from fastapi import UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from pathlib import Path
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+import time
+
+MARKER = "INFINI_FRIEND_CHAT_ENTRY_V1"
+
+INJECT = r"""
+<!-- INFINI_FRIEND_CHAT_ENTRY_V1 -->
+<style>
+#infini-friend-entry{position:relative;min-height:150px;margin-top:14px;border:1.5px solid rgba(255,145,0,.65);border-radius:25px;overflow:hidden;background:linear-gradient(90deg,rgba(0,0,0,.92),rgba(0,0,0,.28)),url('/friend-chat/card-image?v=1') center/cover,radial-gradient(circle at right,#512000,#080402 68%);box-shadow:0 15px 38px rgba(0,0,0,.42);cursor:pointer;touch-action:manipulation}
+#infini-friend-entry:active{transform:scale(.988)}
+.ifc-copy{position:relative;z-index:2;padding:23px 70px 23px 20px;color:#fff}
+.ifc-kicker{color:#ff9d2d;font-size:12px;font-weight:950;letter-spacing:1.2px}
+.ifc-title{margin-top:4px;font-size:26px;font-weight:1000}
+.ifc-sub{margin-top:6px;color:#ffd09a;font-size:13px}
+.ifc-open{display:inline-flex;margin-top:11px;padding:6px 10px;border:1px solid rgba(255,181,69,.45);border-radius:999px;color:#ffd18a;background:rgba(255,145,0,.10);font-size:11px;font-weight:900}
+#ifc-upload{position:absolute;top:12px;right:12px;z-index:5;width:45px;height:45px;border:1px solid rgba(255,181,69,.72);border-radius:999px;background:rgba(0,0,0,.75);color:#ffd18a;font-size:20px;font-weight:950}
+</style>
+<script>
+(function(){
+ if(window.__IFC_V1__)return;window.__IFC_V1__=true;
+ const clean=v=>String(v||"").replace(/\s+/g," ").trim().toUpperCase();
+ function label(n){return [...document.querySelectorAll("body *")].find(e=>!e.children.length&&clean(e.textContent)==="ZONE "+n)||null}
+ function card(e){if(!e)return null;return e.closest("a,button,[role='link'],[role='button'],.zone-card,.zoneCard,.zone,.card,.tile")||e.parentElement}
+ function parent(cards){let n=cards[0]&&cards[0].parentElement;while(n&&n!==document.body){if(cards.every(c=>n.contains(c)))return n;n=n.parentElement}return null}
+ function add(){
+  if(document.getElementById("infini-friend-entry"))return true;
+  const cards=[1,2,3,4].map(label).map(card).filter(Boolean);
+  if(cards.length<4)return false;
+  const holder=parent(cards);if(!holder||!holder.parentElement)return false;
+  const box=document.createElement("div");
+  box.id="infini-friend-entry";box.tabIndex=0;box.setAttribute("role","link");
+  box.innerHTML='<div class="ifc-copy"><div class="ifc-kicker">CONNECTION</div><div class="ifc-title">FRIEND / CHAT</div><div class="ifc-sub">เพื่อน · ข้อความจากแผ่น · แชทส่วนตัว</div><div class="ifc-open">กดเพื่อเปิด</div></div><button id="ifc-upload" type="button">⇧</button><input id="ifc-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>';
+  holder.insertAdjacentElement("afterend",box);
+  box.onclick=e=>{if(!e.target.closest("#ifc-upload"))location.href="/friend-chat"};
+  box.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();location.href="/friend-chat"}};
+  const b=box.querySelector("#ifc-upload"),f=box.querySelector("#ifc-file");
+  b.onclick=e=>{e.preventDefault();e.stopPropagation();f.click()};
+  f.onchange=async()=>{const x=f.files&&f.files[0];if(!x)return;const d=new FormData();d.append("file",x);b.textContent="…";const r=await fetch("/friend-chat/card-upload",{method:"POST",body:d});if(r.ok)location.reload();else{b.textContent="!";alert("อัปโหลดไม่สำเร็จ")}};
+  return true;
+ }
+ function start(){if(add())return;let i=0,t=setInterval(()=>{i++;if(add()||i>14)clearInterval(t)},300)}
+ document.readyState==="loading"?document.addEventListener("DOMContentLoaded",start):start();
+})();
+</script>
+"""
+
+class FriendChatMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        if "text/html" not in response.headers.get("content-type","").lower():
+            return response
+        path = request.url.path
+        if not (path == "/id-home" or path.startswith("/id-home/") or path == "/id" or path.startswith("/id/") or path == "/member/id" or path.startswith("/member/id/")):
+            return response
+        iterator = getattr(response, "body_iterator", None)
+        if iterator is None:
+            return response
+        chunks = []
+        async for chunk in iterator:
+            chunks.append(chunk)
+        raw = b"".join(chunks)
+        try:
+            html = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return Response(raw, status_code=response.status_code, headers=dict(response.headers), media_type="text/html")
+        if MARKER not in html:
+            html = html.replace("</body>", INJECT + "\n</body>", 1) if "</body>" in html else html + INJECT
+        headers = dict(response.headers)
+        headers.pop("content-length", None)
+        headers.pop("content-encoding", None)
+        return Response(html, status_code=response.status_code, headers=headers, media_type="text/html")
+
+def install_friend_chat_entry_7000(app):
+    base = Path(__file__).resolve().parent
+    card_dir = base / "data" / "friend_chat_entry" / "card"
+    card_dir.mkdir(parents=True, exist_ok=True)
+
+    def latest():
+        files = [p for p in card_dir.iterdir() if p.is_file()]
+        return max(files, key=lambda p:p.stat().st_mtime) if files else None
+
+    @app.get("/friend-chat", response_class=HTMLResponse)
+    def friend_chat():
+        return HTMLResponse(r"""<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>FRIEND / CHAT</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:14px;background:radial-gradient(circle at top right,#321500,#080402 44%,#000);color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}.wrap{max-width:900px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.brand{color:#ff9d2d;font-size:20px;font-weight:1000}.back{padding:10px 14px;border:1px solid rgba(255,154,20,.5);border-radius:14px;background:#080402;color:#ffd09a;text-decoration:none;font-weight:900}.cover{position:relative;min-height:175px;margin-bottom:14px;border:1px solid rgba(255,145,0,.48);border-radius:25px;overflow:hidden;background:linear-gradient(90deg,rgba(0,0,0,.92),rgba(0,0,0,.28)),url('/friend-chat/card-image?v=2') center/cover,radial-gradient(circle at right,#5a2400,#080402 65%)}.copy{padding:27px 70px 27px 21px}.copy h1{margin:0;font-size:32px}.copy p{margin:7px 0 0;color:#ffd09a}.upload{position:absolute;top:12px;right:12px}.upload label{width:46px;height:46px;display:grid;place-items:center;border:1px solid rgba(255,181,69,.7);border-radius:999px;background:rgba(0,0,0,.76);color:#ffd18a;font-size:20px;font-weight:950}.upload input{display:none}.layout{display:grid;grid-template-columns:minmax(116px,32%) 1fr;gap:10px}.panel{min-width:0;border:1px solid rgba(255,145,0,.35);border-radius:21px;overflow:hidden;background:rgba(12,6,3,.82)}.head{padding:13px;border-bottom:1px solid rgba(255,145,0,.24);color:#ffac48;font-size:12px;font-weight:950}.list{min-height:290px;padding:9px}.empty{min-height:270px;display:grid;place-items:center;padding:10px;color:#a88e78;text-align:center;font-size:12px;line-height:1.5}.search{padding:9px;border-bottom:1px solid rgba(255,145,0,.2)}.search input{width:100%;padding:11px;border:1px solid rgba(255,145,0,.34);border-radius:13px;background:#080402;color:#fff;outline:none}.note{margin-top:12px;padding:12px;border:1px dashed rgba(255,145,0,.3);border-radius:15px;color:#a88e78;font-size:12px;line-height:1.5}@media(max-width:420px){.layout{grid-template-columns:118px minmax(0,1fr)}}
+</style></head><body><div class="wrap">
+<div class="top"><div class="brand">FRIEND / CHAT</div><a class="back" href="/id-home">กลับ</a></div>
+<div class="cover"><form class="upload" method="post" action="/friend-chat/card-upload" enctype="multipart/form-data"><label for="fc">⇧</label><input id="fc" type="file" name="file" accept="image/jpeg,image/png,image/webp" onchange="this.form.submit()"></form><div class="copy"><h1>เพื่อนและแชท</h1><p>ข้อความด้านซ้าย · รายชื่อเพื่อนด้านขวา</p></div></div>
+<div class="layout"><section class="panel"><div class="head">ข้อความใหม่</div><div class="list"><div class="empty">ยังไม่มีข้อความจากแผ่น</div></div></section><section class="panel"><div class="head">เพื่อนของฉัน</div><div class="search"><input type="search" placeholder="ค้นหา INFINI ID"></div><div class="list"><div class="empty">ยังไม่มีเพื่อนในรายการ</div></div></section></div>
+<div class="note">ขั้นนี้เพิ่มช่องทางเข้า รูปอัปโหลด และหน้าเพื่อนก่อน ยังไม่เชื่อมแชทข้ามบัญชี เพื่อไม่กระทบของเดิม</div>
+</div></body></html>""")
+
+    @app.post("/friend-chat/card-upload")
+    async def upload_card(file: UploadFile = File(...)):
+        ext = Path(file.filename or "").suffix.lower()
+        if ext not in {".jpg",".jpeg",".png",".webp"}:
+            raise HTTPException(400,"รองรับเฉพาะ JPG PNG WEBP")
+        raw = await file.read()
+        if not raw or len(raw) > 15*1024*1024:
+            raise HTTPException(400,"รูปต้องไม่เกิน 15 MB")
+        for old in card_dir.iterdir():
+            if old.is_file():
+                try: old.unlink()
+                except Exception: pass
+        (card_dir / f"friend_chat_{int(time.time())}{ext}").write_bytes(raw)
+        return RedirectResponse("/id-home", status_code=303)
+
+    @app.get("/friend-chat/card-image")
+    def card_image():
+        target = latest()
+        if target is None:
+            return Response(status_code=404)
+        return FileResponse(target, headers={"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"})
+
+    marker = "_friend_chat_entry_installed"
+    if not getattr(app.state, marker, False):
+        app.add_middleware(FriendChatMiddleware)
+        setattr(app.state, marker, True)

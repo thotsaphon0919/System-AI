@@ -1,0 +1,611 @@
+from fastapi import FastAPI, UploadFile, File, Request
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from pathlib import Path
+import uuid
+import json
+
+STATE_FILE = Path("id_entry_7000_state.json")
+UPLOAD_DIR = Path("id_entry_7000_uploads")
+
+ID_ENTRY_HTML = r'''
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>INFINI ID HOME</title>
+<style>
+:root{
+  --bg:#050505;
+  --panel:#0b0b0d;
+  --panel2:#101014;
+  --line:rgba(255,255,255,.11);
+  --accent:#ff8a1f;
+  --accent2:#ffc067;
+  --text:#f7f7f7;
+  --muted:#9d9da5;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:#000;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{overflow-x:hidden}
+a{color:inherit}
+button,input,textarea{font:inherit}
+.app{min-height:100vh;background:radial-gradient(circle at 75% 0,rgba(255,116,0,.12),transparent 28%),linear-gradient(#050505,#000);padding-bottom:104px}
+.topbar{position:sticky;top:0;z-index:60;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(0,0,0,.88);border-bottom:1px solid var(--line);backdrop-filter:blur(16px)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:950;letter-spacing:.08em;font-size:14px}
+.brandMark{width:28px;height:28px;border:1px solid rgba(255,138,31,.7);border-radius:9px;display:grid;place-items:center;color:var(--accent);font-size:17px}
+.topActions{display:flex;gap:8px}.iconBtn{width:38px;height:38px;border:1px solid var(--line);border-radius:12px;background:#0b0b0d;color:#ddd;display:grid;place-items:center;text-decoration:none}
+.wrap{max-width:720px;margin:auto;padding:14px 14px 30px}
+.hero{position:relative;min-height:360px;border:1px solid rgba(255,138,31,.36);border-radius:28px;overflow:hidden;background:radial-gradient(circle at 70% 20%,#2b1609,#0b0b0d 55%,#050505);box-shadow:0 22px 70px rgba(0,0,0,.48);cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.heroMedia{position:absolute;inset:0}.heroMedia img,.heroMedia video{width:100%;height:100%;object-fit:cover;display:block}.heroMedia:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.22) 52%,rgba(0,0,0,.9))}
+.heroEmpty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#777}.heroEmpty b{display:block;color:#ddd;margin-top:8px}.heroEmpty .plus{font-size:38px;color:var(--accent)}
+.heroContent{position:relative;z-index:3;min-height:360px;display:flex;align-items:flex-end;justify-content:space-between;gap:14px;padding:20px;pointer-events:none}
+.heroIdentity{min-width:0;max-width:76%;text-shadow:0 3px 18px #000}.eyebrow{font-size:11px;color:var(--accent);font-weight:950;letter-spacing:.14em}.profileName{font-size:27px;font-weight:1000;line-height:1.05;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.profileMeta{font-size:12px;color:#e2e2e5;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uploadWord{flex:0 0 auto;color:#fff;font-size:12px;font-weight:950;letter-spacing:.05em;text-shadow:0 2px 12px #000}.hero.pressing{border-color:rgba(255,138,31,.82);transform:scale(.997)}
+.section{margin-top:16px}.sectionHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 10px}.sectionHead h2{margin:0;font-size:15px;letter-spacing:.02em}.sectionHead span,.sectionHead a{color:#888;font-size:12px;text-decoration:none}
+.tools{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.tool{min-width:0;min-height:112px;padding:12px 7px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(160deg,#111116,#08080a);text-decoration:none;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px}.tool:active{transform:scale(.97)}.toolIcon{width:43px;height:43px;border-radius:14px;display:grid;place-items:center;border:1px solid rgba(255,138,31,.28);background:rgba(255,138,31,.08);color:var(--accent);font-size:20px}.tool b{font-size:12px}.tool small{display:block;color:#777;font-size:9px;line-height:1.2}
+.creative-card{position:relative;min-height:205px;display:flex;flex-direction:column;justify-content:flex-end;padding:18px;border:1px solid rgba(255,138,31,.38);border-radius:24px;overflow:hidden;background:radial-gradient(circle at 75% 20%,rgba(255,120,0,.2),transparent 35%),linear-gradient(145deg,#15100c,#080809 65%);cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .12s ease,border-color .12s ease}.creative-card.pressing{transform:scale(.991);border-color:rgba(255,138,31,.8)}.creativeMedia{position:absolute;inset:0}.creativeMedia img,.creativeMedia video{width:100%;height:100%;object-fit:cover;display:block}.creative-card:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08) 15%,rgba(0,0,0,.9));pointer-events:none}.creativeText{position:relative;z-index:2;max-width:78%;pointer-events:none}.creativeText .mini{color:var(--accent);font-size:10px;font-weight:950;letter-spacing:.12em}.creativeText h2{margin:4px 0 6px;font-size:26px}.creativeText p{margin:0;color:#aaa;font-size:12px;line-height:1.5}.creativeUpload{position:absolute;right:18px;bottom:18px;z-index:3;color:#fff;font-size:12px;font-weight:950;letter-spacing:.04em;text-shadow:0 2px 12px #000;pointer-events:none}
+.zones{display:grid;grid-template-columns:1fr 1fr;gap:12px}.zoneCard{position:relative;min-width:0;border:1px solid rgba(255,255,255,.13);border-radius:22px;background:#0b0b0d;overflow:hidden;cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .12s ease,border-color .12s ease}.zoneCard:active,.zoneCard.pressing{transform:scale(.982);border-color:rgba(255,138,31,.7)}.zoneMedia{position:relative;height:190px;background:linear-gradient(145deg,#151519,#08080a);display:grid;place-items:center;color:#75757d;text-align:center;overflow:hidden}.zoneMedia img,.zoneMedia video{width:100%;height:100%;object-fit:cover;display:block}.zoneMedia:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.1));pointer-events:none}.zonePlaceholder{position:relative;z-index:1;padding:18px;color:#777;font-size:11px;line-height:1.4}.zonePlaceholder .zonePlus{display:block;color:var(--accent);font-size:30px;line-height:1;margin-bottom:8px}.zonePlaceholder strong{display:block;color:#d6d6da;font-size:12px;margin-bottom:4px}.zoneFooter{min-height:67px;padding:11px 13px 12px;border-top:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#0c0c0f,#070708);display:flex;align-items:flex-end;justify-content:space-between;gap:8px}.zoneName{min-width:0}.zoneName b{display:block;color:var(--accent);font-size:12px;letter-spacing:.06em}.zoneName span{display:block;color:#aaa;font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.zoneUpload{flex:0 0 auto;color:#fff;font-size:11px;font-weight:950;letter-spacing:.03em}
+.latest{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(142px,42%);gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}.workCard{scroll-snap-align:start;min-height:184px;border:1px solid var(--line);border-radius:19px;background:#0b0b0d;overflow:hidden;text-decoration:none}.workMedia{height:118px;background:#111;display:grid;place-items:center;color:#555}.workMedia img,.workMedia video{width:100%;height:100%;object-fit:cover;display:block}.workCopy{padding:10px}.workCopy b{display:block;font-size:12px}.workCopy span{display:block;color:#777;font-size:10px;margin-top:4px}.addWork{border-style:dashed;display:grid;place-items:center;text-align:center;color:#999;background:#08080a}.addWork strong{display:block;font-size:30px;color:var(--accent);font-weight:400}.addWork span{font-size:11px}
+.profilePanel{display:none;margin-top:12px;padding:15px;border:1px solid var(--line);border-radius:22px;background:#0b0b0d}.profilePanel.show{display:block}.formGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field label{display:block;color:#999;font-size:10px;margin:0 0 5px}.field input,.field textarea{width:100%;border:1px solid var(--line);border-radius:13px;background:#050506;color:#fff;padding:11px;outline:none}.field textarea{min-height:86px;resize:vertical}.field.full{grid-column:1/-1}.saveBtn{width:100%;min-height:48px;margin-top:10px;border:0;border-radius:14px;background:linear-gradient(135deg,#ff9d2f,#ff7411);color:#160800;font-weight:1000}
+.bottomNav{position:fixed;left:50%;bottom:10px;z-index:80;width:min(680px,calc(100% - 20px));transform:translateX(-50%);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:8px;border:1px solid var(--line);border-radius:24px;background:rgba(7,7,8,.93);backdrop-filter:blur(18px);box-shadow:0 15px 40px rgba(0,0,0,.55)}.navItem{min-height:48px;border:0;background:transparent;color:#898990;text-decoration:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px}.navItem .nicon{font-size:18px;color:var(--accent)}.navItem.active{color:var(--accent)}.navPlus{width:54px;height:54px;margin:auto;border:1px solid rgba(255,138,31,.75);border-radius:18px;background:#0b0b0d;color:var(--accent);font-size:28px;box-shadow:0 0 24px rgba(255,120,0,.15)}
+.uploadSheet{position:fixed;inset:0;z-index:120;display:none;flex-direction:column;background:#050506}.uploadSheet.show{display:flex}.sheetTop{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 15px;border-bottom:1px solid var(--line)}.sheetTop h2{margin:0;font-size:15px}.sheetClose{width:40px;height:40px;border:1px solid var(--line);border-radius:12px;background:#0b0b0d;color:#fff}.sheetBody{flex:1;overflow:auto;padding:16px}.uploadPreview{min-height:48vh;border:1px dashed rgba(255,138,31,.45);border-radius:24px;background:#0b0b0d;display:grid;place-items:center;text-align:center;color:#777;overflow:hidden}.uploadPreview img,.uploadPreview video{width:100%;height:48vh;object-fit:contain;background:#000}.sheetChoices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.choice{min-height:58px;border:1px solid var(--line);border-radius:15px;background:#0b0b0d;color:#ddd;font-weight:900}.choice.active{border-color:var(--accent);color:var(--accent2);background:rgba(255,138,31,.08)}.sheetSubmit{width:100%;min-height:54px;margin-top:12px;border:0;border-radius:16px;background:linear-gradient(135deg,#ff9d2f,#ff7411);color:#180800;font-weight:1000}.sheetSubmit:disabled{opacity:.45}.hidden{display:none!important}.toast{position:fixed;top:70px;left:50%;z-index:200;transform:translateX(-50%);display:none;padding:10px 14px;border:1px solid rgba(255,138,31,.45);border-radius:999px;background:#18100b;color:#ffd2a4;font-size:12px;font-weight:900}.toast.show{display:block}
+.web-overlay{position:fixed;inset:0;z-index:160;display:none;flex-direction:column;background:#030303}.web-top{height:64px;display:flex;gap:8px;padding:10px;background:#000;border-bottom:1px solid var(--line)}.web-top input{flex:1;border-radius:14px;border:1px solid var(--line);background:#0b0b0d;color:white;padding:0 13px}.web-top button{border:1px solid var(--line);border-radius:13px;background:#0b0b0d;color:#fff;padding:0 13px}.web-frame{flex:1;border:0;background:white}
+@media(max-width:520px){.zoneMedia{height:174px}.tools{grid-template-columns:repeat(5,1fr);gap:6px}.tool{min-height:104px;padding:10px 4px}.toolIcon{width:40px;height:40px}.tool b{font-size:10px}.hero{min-height:340px}.heroContent{min-height:340px}.profileName{font-size:21px}.formGrid{grid-template-columns:1fr}.field.full{grid-column:auto}.latest{grid-auto-columns:46%}}
+
+/* === ZONE CARD FULL IMAGE PATCH === */
+.zone-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+
+.zone-card,
+.zone-box,
+.zone-tile{
+  position:relative !important;
+  overflow:hidden !important;
+  border-radius:24px !important;
+  min-height:280px !important;
+  background:#111 !important;
+  border:1.5px solid rgba(255,140,40,.28) !important;
+}
+
+.zone-card img,
+.zone-box img,
+.zone-tile img,
+.zone-thumb img,
+.zone-photo img,
+.zone-cover img,
+.zone-preview img{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  display:block !important;
+  border-radius:inherit !important;
+}
+
+.zone-thumb,
+.zone-photo,
+.zone-cover,
+.zone-preview{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  overflow:hidden !important;
+  border-radius:inherit !important;
+}
+
+.zone-card::after,
+.zone-box::after,
+.zone-tile::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:42%;
+  background:linear-gradient(to top, rgba(0,0,0,.82), rgba(0,0,0,.18), rgba(0,0,0,0));
+  pointer-events:none;
+}
+
+.zone-card .zone-info,
+.zone-box .zone-info,
+.zone-tile .zone-info,
+.zone-card .zone-meta,
+.zone-box .zone-meta,
+.zone-tile .zone-meta,
+.zone-card .zone-bottom,
+.zone-box .zone-bottom,
+.zone-tile .zone-bottom{
+  position:absolute !important;
+  left:16px !important;
+  right:16px !important;
+  bottom:14px !important;
+  z-index:3 !important;
+}
+
+.zone-card .zone-title,
+.zone-box .zone-title,
+.zone-tile .zone-title{
+  font-size:15px !important;
+  font-weight:800 !important;
+  line-height:1.15 !important;
+  color:#ff9a3c !important;
+  text-transform:uppercase !important;
+  margin:0 0 4px 0 !important;
+}
+
+.zone-card .zone-subtitle,
+.zone-box .zone-subtitle,
+.zone-tile .zone-subtitle{
+  color:rgba(255,255,255,.78) !important;
+  font-size:12px !important;
+  margin:0 !important;
+}
+
+.zone-card .zone-upload,
+.zone-box .zone-upload,
+.zone-tile .zone-upload{
+  color:#fff !important;
+  font-size:13px !important;
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="brandMark">∞</span><span>INFINI ID</span></div>
+    <div class="topActions">
+      <button class="iconBtn" type="button" onclick="openSearch()" aria-label="ค้นหา">⌕</button>
+      <button class="iconBtn" type="button" onclick="toggleProfile()" aria-label="แก้ไขโปรไฟล์">⚙</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero" id="idCoverBox" role="button" tabindex="0" aria-label="กดค้างเพื่ออัปโหลดภาพปก INFINI ID">
+      <div class="heroMedia" id="heroMedia"></div>
+      <div class="heroEmpty" id="idCoverEmpty"><div><div class="plus">＋</div><b>เพิ่มภาพปก INFINI ID</b></div></div>
+      <div class="heroContent">
+        <div class="heroIdentity">
+          <div class="eyebrow">DIGITAL SPACE</div>
+          <div class="profileName" id="profileNameView">INFINI MEMBER</div>
+          <div class="profileMeta" id="profileMetaView">INF-000001 · MEMBER</div>
+        </div>
+        <div class="uploadWord">อัปโหลด</div>
+      </div>
+    </section>
+
+    <section class="profilePanel" id="profilePanel">
+      <div class="formGrid">
+        <div class="field"><label>ชื่อแสดงผล</label><input id="displayName" placeholder="INFINI MEMBER"></div>
+        <div class="field"><label>USERNAME</label><input id="username" placeholder="infini"></div>
+        <div class="field"><label>INFINI ID</label><input id="infiniId" placeholder="INF-000001"></div>
+        <div class="field"><label>สถานะ / บทบาท</label><input id="level" placeholder="MEMBER"></div>
+        <div class="field full"><label>คำอธิบาย</label><textarea id="bio" placeholder="เขียนรายละเอียดของตัวเอง ร้าน หรือโปรเจกต์"></textarea></div>
+      </div>
+      <button class="saveBtn" type="button" onclick="saveProfile()">บันทึกโปรไฟล์</button>
+    </section>
+
+    <section class="section">
+      <div class="sectionHead"><h2>ทางลัด</h2><span>ใช้งานระบบเดิม</span></div>
+      <div class="tools">
+        <a class="tool" href="/friend-chat"><span class="toolIcon">◌</span><b>แชท</b><small>เพื่อนและคำขอ</small></a>
+        <a class="tool" href="/"><span class="toolIcon">▣</span><b>ครีเอทีฟ</b><small>คลังและห้องงาน</small></a>
+        <button class="tool" type="button" onclick="openUpload('gallery')"><span class="toolIcon">⇧</span><b>อัปโหลด</b><small>รูปหรือวิดีโอ</small></button>
+        <a class="tool" href="/ai-layout-lab"><span class="toolIcon">✦</span><b>AI จัดร้าน</b><small>สร้างเลย์เอาต์</small></a>
+        <a class="tool" id="pointTowerLink" href="http://127.0.0.1:8046/tower"><span class="toolIcon">★</span><b>Point</b><small>แต้มและการ์ด</small></a>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sectionHead"><h2>พื้นที่สร้างสรรค์</h2><a href="/">เปิดคลังทั้งหมด</a></div>
+      <article class="creative-card" id="creativeCard" role="link" tabindex="0" data-href="/creative-gate" aria-label="แตะเพื่อเข้า Creative Room กดค้างเพื่ออัปโหลดภาพ">
+        <div class="creativeMedia" id="creativeMedia"></div>
+        <div class="creativeText"><div class="mini">YOUR CONTENT SPACE</div><h2>CREATIVE ROOM</h2></div>
+      </article>
+    </section>
+
+    <section class="section">
+      <div class="sectionHead"><h2>โซนของฉัน</h2><a href="/zone-hub">ดู Zone Hub</a></div>
+      <div class="zones" id="zoneGrid">
+        <article class="zoneCard" role="link" tabindex="0" data-zone="private" data-href="/zone/private" aria-label="ZONE 1 PRIVATE ส่วนตัว — แตะเพื่อเข้า กดค้างเพื่ออัปโหลดรูป">
+          <div class="zoneMedia" id="zoneMediaPrivate"><div class="zonePlaceholder"><span class="zonePlus">＋</span><strong>เพิ่มรูปโซน</strong></div></div>
+          <div class="zoneFooter"><div class="zoneName"><b>ZONE 1 · PRIVATE</b><span>ส่วนตัว</span></div><span class="zoneUpload">อัปโหลด</span></div>
+        </article>
+        <article class="zoneCard" role="link" tabindex="0" data-zone="office" data-href="/zone/office" aria-label="ZONE 2 OFFICE ออฟฟิศ — แตะเพื่อเข้า กดค้างเพื่ออัปโหลดรูป">
+          <div class="zoneMedia" id="zoneMediaOffice"><div class="zonePlaceholder"><span class="zonePlus">＋</span><strong>เพิ่มรูปโซน</strong></div></div>
+          <div class="zoneFooter"><div class="zoneName"><b>ZONE 2 · OFFICE</b><span>ออฟฟิศ</span></div><span class="zoneUpload">อัปโหลด</span></div>
+        </article>
+        <article class="zoneCard" role="link" tabindex="0" data-zone="shop" data-href="/zone/shop" aria-label="ZONE 3 SHOP ร้านค้า — แตะเพื่อเข้า กดค้างเพื่ออัปโหลดรูป">
+          <div class="zoneMedia" id="zoneMediaShop"><div class="zonePlaceholder"><span class="zonePlus">＋</span><strong>เพิ่มรูปโซน</strong></div></div>
+          <div class="zoneFooter"><div class="zoneName"><b>ZONE 3 · SHOP</b><span>ร้านค้า</span></div><span class="zoneUpload">อัปโหลด</span></div>
+        </article>
+        <article class="zoneCard" role="link" tabindex="0" data-zone="showcase" data-href="/zone/portfolio" aria-label="ZONE 4 SHOWCASE ผลงาน — แตะเพื่อเข้า กดค้างเพื่ออัปโหลดรูป">
+          <div class="zoneMedia" id="zoneMediaShowcase"><div class="zonePlaceholder"><span class="zonePlus">＋</span><strong>เพิ่มรูปโซน</strong></div></div>
+          <div class="zoneFooter"><div class="zoneName"><b>ZONE 4 · MEDIA</b><span>ผลงาน</span></div><span class="zoneUpload">อัปโหลด</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sectionHead"><h2>ผลงานล่าสุด</h2><label id="galleryAddLabel" style="cursor:pointer"><span>เพิ่มรูป</span><input id="galleryInput" class="hidden" type="file" accept="image/*,video/*" multiple></label></div>
+      <div class="latest" id="latestGrid"></div>
+    </section>
+  </main>
+
+  <nav class="bottomNav">
+    <a class="navItem active" href="/id-home"><span class="nicon">⌂</span><span>หน้าหลัก</span></a>
+    <a class="navItem" href="/friend-chat"><span class="nicon">◌</span><span>แชท</span></a>
+    <button class="navPlus" type="button" onclick="openUpload('gallery')">＋</button>
+    <a class="navItem" href="/"><span class="nicon">▣</span><span>ครีเอทีฟ</span></a>
+    <a class="navItem" href="/zone-hub"><span class="nicon">◇</span><span>โซน</span></a>
+  </nav>
+</div>
+
+<div class="uploadSheet" id="uploadSheet">
+  <div class="sheetTop"><button class="sheetClose" type="button" onclick="closeUpload()">←</button><h2 id="uploadTitle">อัปโหลด</h2><span style="width:40px"></span></div>
+  <div class="sheetBody">
+    <div class="uploadPreview" id="uploadPreview" onclick="document.getElementById('sheetFile').click()"><div><div style="font-size:38px;color:var(--accent)">＋</div><b>เลือกรูปหรือวิดีโอ</b><div style="font-size:11px;margin-top:7px">แตะพื้นที่นี้เพื่อเลือกไฟล์</div></div></div>
+    <input id="sheetFile" class="hidden" type="file" accept="image/*,video/*">
+    <input id="directFile" class="hidden" type="file" accept="image/*,video/*">
+    <div class="sheetChoices" id="sheetChoices"><button class="choice active" id="choiceGallery" type="button" onclick="setUploadTarget('gallery')">เพิ่มเข้าคลัง</button><button class="choice" id="choiceCover" type="button" onclick="setUploadTarget('cover')">ใช้เป็นภาพปก</button></div>
+    <button class="sheetSubmit" id="sheetSubmit" type="button" onclick="submitSheet()" disabled>บันทึกและเผยแพร่</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="web-overlay" id="webOverlay"><div class="web-top"><input id="webInput" placeholder="ค้นหาเว็บ..."><button onclick="runSearch()">ค้นหา</button><button onclick="closeSearch()">ปิด</button></div><iframe class="web-frame" id="webFrame"></iframe></div>
+
+<script>
+let STATE={};
+let uploadTarget='gallery';
+let selectedFile=null;
+const $=id=>document.getElementById(id);
+
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1500)}
+function mediaEl(src,type){let el;if(String(type||'').startsWith('video')){el=document.createElement('video');el.controls=true;el.loop=true;el.muted=true;el.playsInline=true}else{el=document.createElement('img')}el.src=src;return el}
+function uploadFile(file){const form=new FormData();form.append('file',file);return fetch('/api/id-entry/upload',{method:'POST',body:form}).then(r=>r.json())}
+function saveState(){return fetch('/api/id-entry/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(STATE||{})})}
+function initials(name){const s=String(name||'').trim();return s?s.slice(0,2).toUpperCase():'∞'}
+function applyProfile(){const name=STATE.displayName||'INFINI MEMBER',id=STATE.infiniId||'INF-000001',level=STATE.level||'MEMBER';$('profileNameView').textContent=name;$('profileMetaView').textContent=id+' · '+level;['displayName','username','infiniId','level','bio'].forEach(k=>{if($(k))$(k).value=STATE[k]||''})}
+function applyCover(){const media=$('heroMedia');media.innerHTML='';if(STATE.idCover){media.appendChild(mediaEl(STATE.idCover.src,STATE.idCover.type));$('idCoverEmpty').style.display='none'}else{$('idCoverEmpty').style.display='grid'}}
+function applyCreativeCover(){const media=$('creativeMedia');if(!media)return;media.innerHTML='';const item=STATE.creativeCover;if(item&&item.src){const el=mediaEl(item.src,item.type);if(el.tagName==='VIDEO'){el.controls=false;el.autoplay=true;el.muted=true;el.loop=true;el.playsInline=true}media.appendChild(el)}}
+function applyZoneCovers(){const covers=STATE.zoneCovers||{};const map={private:'zoneMediaPrivate',office:'zoneMediaOffice',shop:'zoneMediaShop',showcase:'zoneMediaShowcase'};Object.entries(map).forEach(([key,id])=>{const box=$(id);if(!box)return;box.innerHTML='';const item=covers[key];if(item&&item.src){const el=mediaEl(item.src,item.type);if(el.tagName==='VIDEO'){el.controls=false;el.autoplay=true;el.muted=true;el.loop=true;el.playsInline=true}box.appendChild(el)}else{box.innerHTML='<div class="zonePlaceholder"><span class="zonePlus">＋</span><strong>เพิ่มรูปโซน</strong></div>'}})}
+function renderLatest(){const grid=$('latestGrid');grid.innerHTML='';const items=(STATE.gallery||[]).slice(-6).reverse();items.forEach((item,i)=>{const card=document.createElement('div');card.className='workCard';const m=document.createElement('div');m.className='workMedia';m.appendChild(mediaEl(item.src,item.type));const c=document.createElement('div');c.className='workCopy';c.innerHTML='<b>ผลงาน '+(items.length-i)+'</b><span>จากคลัง INFINI ID</span>';card.append(m,c);grid.appendChild(card)});const add=document.createElement('button');add.type='button';add.className='workCard addWork';add.innerHTML='<div><strong>＋</strong><span>เพิ่มผลงานใหม่</span></div>';add.onclick=()=>openUpload('gallery');grid.appendChild(add)}
+function applyState(){applyProfile();applyCover();applyCreativeCover();applyZoneCovers();renderLatest()}
+function loadState(){fetch('/api/id-entry/state?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{STATE=d||{};applyState()}).catch(()=>applyState())}
+function toggleProfile(){$('profilePanel').classList.toggle('show');if($('profilePanel').classList.contains('show'))$('profilePanel').scrollIntoView({behavior:'smooth',block:'center'})}
+async function saveProfile(){['displayName','username','infiniId','level','bio'].forEach(k=>STATE[k]=$(k).value);await saveState();applyProfile();$('profilePanel').classList.remove('show');toast('บันทึกโปรไฟล์แล้ว')}
+function openUpload(target='gallery'){uploadTarget=target;selectedFile=null;$('sheetFile').value='';$('uploadPreview').innerHTML='<div><div style="font-size:38px;color:var(--accent)">＋</div><b>เลือกรูปหรือวิดีโอ</b><div style="font-size:11px;margin-top:7px">แตะพื้นที่นี้เพื่อเลือกไฟล์</div></div>';$('sheetSubmit').disabled=true;setUploadTarget(target);$('uploadTitle').textContent=target.startsWith('zone-')?'อัปโหลดรูปโซน':'อัปโหลด';$('uploadSheet').classList.add('show')}
+function closeUpload(){$('uploadSheet').classList.remove('show');selectedFile=null}
+function setUploadTarget(target){uploadTarget=target;const zoneMode=target.startsWith('zone-');$('sheetChoices').style.display=zoneMode?'none':'grid';$('choiceGallery').classList.toggle('active',target==='gallery');$('choiceCover').classList.toggle('active',target==='cover')}
+let directUploadTarget='';
+function openDirectUpload(target){directUploadTarget=target;const input=$('directFile');input.value='';input.click()}
+function bindPressTarget(el,target,href=''){
+  let timer=null,longReady=false,moved=false,startX=0,startY=0;
+  const clear=()=>{if(timer){clearTimeout(timer);timer=null}el.classList.remove('pressing')};
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  el.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    longReady=false;moved=false;startX=e.clientX;startY=e.clientY;
+    el.classList.add('pressing');
+    timer=setTimeout(()=>{longReady=true;el.classList.remove('pressing');if(navigator.vibrate)navigator.vibrate(35)},280);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(Math.abs(e.clientX-startX)>16||Math.abs(e.clientY-startY)>16){moved=true;clear()}
+  });
+  el.addEventListener('pointerup',e=>{
+    const upload=longReady&&!moved;
+    const go=!longReady&&!moved&&href;
+    clear();
+    if(upload){e.preventDefault();openDirectUpload(target);return}
+    if(go){e.preventDefault();location.href=href}
+  });
+  el.addEventListener('pointercancel',clear);
+  el.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')clear()});
+  el.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&href){e.preventDefault();location.href=href}});
+}
+function bindLongPressUploads(){
+  bindPressTarget($('idCoverBox'),'cover','');
+  bindPressTarget($('creativeCard'),'creative',$('creativeCard').dataset.href);
+  document.querySelectorAll('.zoneCard[data-zone]').forEach(card=>bindPressTarget(card,'zone-'+card.dataset.zone,card.dataset.href));
+}
+
+$('directFile').addEventListener('change',async e=>{
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  toast('กำลังอัปโหลด...');
+  try{
+    const res=await uploadFile(file);if(!res.ok)throw new Error(res.error||'upload failed');
+    const item={src:res.url+'?t='+Date.now(),type:res.type};
+    if(directUploadTarget==='cover')STATE.idCover=item;
+    else if(directUploadTarget==='creative')STATE.creativeCover=item;
+    else if(directUploadTarget.startsWith('zone-')){const key=directUploadTarget.slice(5);STATE.zoneCovers=STATE.zoneCovers||{};STATE.zoneCovers[key]=item}
+    await saveState();applyState();toast('อัปโหลดแล้ว');
+  }catch(err){console.error(err);toast('อัปโหลดไม่สำเร็จ')}
+  finally{e.target.value=''}
+});
+$('sheetFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;selectedFile=f;const url=URL.createObjectURL(f);const preview=$('uploadPreview');preview.innerHTML='';preview.appendChild(mediaEl(url,f.type));$('sheetSubmit').disabled=false});
+async function submitSheet(){if(!selectedFile)return;const btn=$('sheetSubmit');btn.disabled=true;btn.textContent='กำลังอัปโหลด...';try{const res=await uploadFile(selectedFile);if(!res.ok)throw new Error(res.error||'upload failed');const item={src:res.url+'?t='+Date.now(),type:res.type};if(uploadTarget==='cover')STATE.idCover=item;else if(uploadTarget==='creative')STATE.creativeCover=item;else if(uploadTarget.startsWith('zone-')){const key=uploadTarget.slice(5);STATE.zoneCovers=STATE.zoneCovers||{};STATE.zoneCovers[key]=item}else{STATE.gallery=STATE.gallery||[];STATE.gallery.push(item)}await saveState();applyState();closeUpload();toast('อัปโหลดแล้ว')}catch(e){console.error(e);toast('อัปโหลดไม่สำเร็จ')}finally{btn.textContent='บันทึกและเผยแพร่';btn.disabled=false}}
+$('galleryInput').addEventListener('change',async e=>{const files=[...e.target.files];if(!files.length)return;STATE.gallery=STATE.gallery||[];toast('กำลังอัปโหลด...');for(const file of files){const res=await uploadFile(file);if(res.ok)STATE.gallery.push({src:res.url+'?t='+Date.now(),type:res.type})}await saveState();renderLatest();toast('เพิ่มเข้าคลังแล้ว');e.target.value=''})
+function openSearch(){$('webOverlay').style.display='flex'}function closeSearch(){$('webOverlay').style.display='none'}function runSearch(){const q=$('webInput').value.trim();if(q)$('webFrame').src='https://www.google.com/search?igu=1&q='+encodeURIComponent(q)}
+(function(){const a=$('pointTowerLink');if(a){a.href=location.protocol+'//'+location.hostname+':8046/tower'}})();
+bindLongPressUploads();
+loadState();
+</script>
+</body>
+</html>
+
+'''
+GATE_HTML = r'''
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>CREATIVE GATE</title>
+<style>
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  width:100%;
+  min-height:100%;
+  background:#050100;
+  color:#fff;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+body{overflow-x:hidden}
+.page{
+  min-height:100vh;
+  background:radial-gradient(circle at top,#170800,#050100 45%,#000);
+  padding-bottom:150px;
+}
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:30;
+  height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:0 14px;
+  background:rgba(0,0,0,.9);
+  border-bottom:1px solid rgba(255,132,0,.35);
+}
+.brand{
+  color:#ff8a1c;
+  font-weight:900;
+  letter-spacing:.12em;
+  font-size:14px;
+}
+.btn,label.btn{
+  border:1px solid rgba(255,132,0,.62);
+  background:rgba(0,0,0,.78);
+  color:#ffc17d;
+  border-radius:999px;
+  padding:10px 14px;
+  font-size:13px;
+  font-weight:900;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.btn.orange{
+  background:#ff9a1f;
+  color:#050505;
+  border:0;
+}
+input[type=file]{display:none}
+.gate-wrap{
+  padding:14px 14px 150px;
+}
+.gate-card{
+  height:calc(100vh - 210px);
+  min-height:520px;
+  border-radius:30px;
+  border:1px solid rgba(255,132,0,.62);
+  background:#050505;
+  overflow:hidden;
+  position:relative;
+}
+.gate-card img,.gate-card video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.empty{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:24px;
+  background:
+    linear-gradient(to top,rgba(0,0,0,.92),rgba(0,0,0,.18)),
+    radial-gradient(circle at top,#301400,#050505 70%);
+}
+.empty h1{
+  margin:0 0 10px;
+  color:#ff9a2c;
+  font-size:40px;
+  letter-spacing:.08em;
+}
+.empty p{
+  margin:0;
+  color:#aaa;
+  font-size:14px;
+}
+.actions{
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:18px;
+  z-index:20;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.actions label,.actions button{
+  min-height:62px;
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <a class="btn" href="/id-home">← ID Home</a>
+    <div class="brand">CREATIVE GATE</div>
+    <button class="btn" onclick="alert('ค้นหายังอยู่หน้า ID Home')">ค้นหา</button>
+  </div>
+
+  <div class="gate-wrap">
+    <div class="gate-card" id="gateCard">
+      <div class="empty" id="gateEmpty">
+        <h1>CREATIVE<br>GATE</h1>
+        <p>อัปโหลดรูปตึก / Space Box / ประตูเข้า Creative Room</p>
+      </div>
+
+      <div class="actions">
+        <label class="btn">
+          อัปโหลดรูปตึก
+          <input id="gateInput" type="file" accept="image/*,video/*">
+        </label>
+        <button class="btn orange" onclick="location.href='/'">เข้าตึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={};
+
+function mediaEl(src,type){
+  let el;
+  if(String(type||"").startsWith("video")){
+    el=document.createElement("video");
+    el.controls=true; el.loop=true; el.muted=true; el.playsInline=true;
+  }else{
+    el=document.createElement("img");
+  }
+  el.src=src;
+  return el;
+}
+
+function setGate(src,type){
+  const card=document.getElementById("gateCard");
+  const empty=document.getElementById("gateEmpty");
+  card.querySelectorAll("img,video").forEach(x=>x.remove());
+  if(empty) empty.style.display="none";
+  card.insertBefore(mediaEl(src,type), card.firstChild);
+}
+
+function uploadFile(file){
+  const form=new FormData();
+  form.append("file", file);
+  return fetch("/api/id-entry/upload",{method:"POST",body:form}).then(r=>r.json());
+}
+function saveState(){
+  return fetch("/api/id-entry/state",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(STATE||{})
+  });
+}
+function loadState(){
+  fetch("/api/id-entry/state?t="+Date.now())
+    .then(r=>r.json())
+    .then(d=>{
+      STATE=d||{};
+      if(STATE.gate) setGate(STATE.gate.src,STATE.gate.type);
+    });
+}
+
+document.getElementById("gateInput").addEventListener("change", async e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+
+  const res=await uploadFile(file);
+  if(!res.ok){
+    alert("อัปโหลดไม่สำเร็จ");
+    return;
+  }
+
+  STATE.gate={src:res.url+"?t="+Date.now(),type:res.type};
+  await saveState();
+  setGate(STATE.gate.src,STATE.gate.type);
+});
+
+loadState();
+</script>
+</body>
+</html>
+'''
+
+def install_id_entry_7000(app: FastAPI):
+    @app.post("/api/id-entry/upload")
+    async def id_entry_upload(file: UploadFile = File(...)):
+        UPLOAD_DIR.mkdir(exist_ok=True)
+
+        content_type = file.content_type or "application/octet-stream"
+        ext = Path(file.filename or "").suffix.lower()
+
+        if not ext:
+            if content_type.startswith("image/"):
+                ext = ".jpg"
+            elif content_type.startswith("video/"):
+                ext = ".mp4"
+            else:
+                ext = ".bin"
+
+        name = f"{uuid.uuid4().hex}{ext}"
+        out = UPLOAD_DIR / name
+        out.write_bytes(await file.read())
+
+        return JSONResponse({
+            "ok": True,
+            "url": f"/id-entry-media/{name}",
+            "type": content_type
+        })
+
+    @app.get("/id-entry-media/{name}")
+    async def id_entry_media(name: str):
+        path = UPLOAD_DIR / name
+        if not path.exists():
+            return JSONResponse({"ok": False, "error": "file not found"}, status_code=404)
+        return FileResponse(path)
+
+    @app.get("/api/id-entry/state")
+    async def id_entry_get_state():
+        if not STATE_FILE.exists():
+            return JSONResponse({})
+        try:
+            return JSONResponse(json.loads(STATE_FILE.read_text(encoding="utf-8")))
+        except Exception:
+            return JSONResponse({})
+
+    @app.post("/api/id-entry/state")
+    async def id_entry_save_state(request: Request):
+        try:
+            data = await request.json()
+            STATE_FILE.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            return JSONResponse({"ok": True})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+    @app.get("/id-home", response_class=HTMLResponse)
+    async def id_home():
+        return HTMLResponse(ID_ENTRY_HTML)
+
+    @app.get("/id", response_class=HTMLResponse)
+    async def id_home_short():
+        return HTMLResponse(ID_ENTRY_HTML)
+
+    @app.get("/creative-gate", response_class=HTMLResponse)
+    async def creative_gate():
+        return HTMLResponse(GATE_HTML)

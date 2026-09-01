@@ -1,0 +1,608 @@
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
+
+MARKER = "INFINI_FIX_UPLOAD_AI_BAR_V2"
+
+
+STYLE = r"""
+<style>
+  /* ซ่อนปุ่มอัปโหลดรุ่นก่อนที่ยืด/ซ้อนในหน้า Creative */
+  #grid .card .infini-easy-upload,
+  #grid .card .card-upload,
+  #grid .card button.infini-easy-upload{
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+
+  /* ปุ่มอัปโหลดใหม่: ขนาดตายตัว แตะครั้งเดียว */
+  .infini-fixed-card-upload{
+    position:absolute !important;
+    top:9px !important;
+    right:9px !important;
+    left:auto !important;
+    bottom:auto !important;
+    z-index:9999 !important;
+
+    width:42px !important;
+    min-width:42px !important;
+    max-width:42px !important;
+    height:42px !important;
+    min-height:42px !important;
+    max-height:42px !important;
+    aspect-ratio:1 / 1 !important;
+
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+
+    margin:0 !important;
+    padding:0 !important;
+    border:1px solid rgba(255,177,63,.82) !important;
+    border-radius:999px !important;
+
+    background:rgba(0,0,0,.82) !important;
+    background-image:none !important;
+    color:#ffd18a !important;
+
+    font:950 20px/1 system-ui !important;
+    text-align:center !important;
+    letter-spacing:0 !important;
+
+    box-shadow:0 7px 20px rgba(0,0,0,.55) !important;
+    transform:none !important;
+    overflow:hidden !important;
+    cursor:pointer !important;
+    touch-action:manipulation !important;
+    -webkit-tap-highlight-color:rgba(255,145,0,.18) !important;
+  }
+
+  .infini-fixed-card-upload:active{
+    transform:scale(.92) !important;
+    background:#ff9a18 !important;
+    color:#160700 !important;
+  }
+
+  /* แถบเข้า AI จัดร้านในส่วนคลังภาพ */
+  .infini-ai-shop-bar{
+    width:100%;
+    min-height:62px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+
+    margin:12px 0 16px;
+    padding:13px 15px;
+
+    border:1.5px solid rgba(255,145,0,.64);
+    border-radius:18px;
+
+    background:
+      linear-gradient(
+        135deg,
+        rgba(255,166,31,.20),
+        rgba(255,112,0,.07) 58%,
+        rgba(0,0,0,.82)
+      );
+
+    color:#fff;
+    text-decoration:none;
+    box-shadow:0 10px 28px rgba(0,0,0,.38);
+    touch-action:manipulation;
+  }
+
+  .infini-ai-shop-bar:active{
+    transform:scale(.985);
+  }
+
+  .infini-ai-shop-copy{
+    min-width:0;
+  }
+
+  .infini-ai-shop-copy b{
+    display:block;
+    color:#ffad48;
+    font-size:17px;
+    font-weight:1000;
+  }
+
+  .infini-ai-shop-copy small{
+    display:block;
+    margin-top:3px;
+    color:#d2b492;
+    font-size:12px;
+    line-height:1.35;
+  }
+
+  .infini-ai-shop-go{
+    flex:0 0 auto;
+    min-width:48px;
+    height:38px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(255,181,69,.55);
+    border-radius:999px;
+    background:#090402;
+    color:#ffd18a;
+    font-size:20px;
+    font-weight:1000;
+  }
+
+  .infini-fix-toast{
+    position:fixed;
+    top:12px;
+    left:50%;
+    z-index:999999;
+    transform:translateX(-50%);
+    display:none;
+    max-width:calc(100% - 28px);
+    padding:10px 14px;
+    border:1px solid rgba(255,145,0,.55);
+    border-radius:999px;
+    background:#170a03;
+    color:#ffd398;
+    text-align:center;
+    font:850 13px system-ui;
+  }
+</style>
+"""
+
+
+CREATIVE_SCRIPT = r"""
+<script>
+(function(){
+  if(window.__INFINI_FIX_CREATIVE_UPLOAD_V2__) return;
+  window.__INFINI_FIX_CREATIVE_UPLOAD_V2__ = true;
+
+  let pages = [];
+  let busy = false;
+
+  function toast(message){
+    let box = document.getElementById("infiniFixToast");
+
+    if(!box){
+      box = document.createElement("div");
+      box.id = "infiniFixToast";
+      box.className = "infini-fix-toast";
+      document.body.appendChild(box);
+    }
+
+    box.textContent = message;
+    box.style.display = "block";
+
+    clearTimeout(box.__timer);
+    box.__timer = setTimeout(function(){
+      box.style.display = "none";
+    }, 1500);
+  }
+
+  function removeOldButtons(){
+    document.querySelectorAll(
+      "#grid .card .infini-easy-upload," +
+      "#grid .card .card-upload," +
+      "#grid .card button.infini-easy-upload"
+    ).forEach(function(button){
+      button.remove();
+    });
+  }
+
+  async function uploadTo(url){
+    if(busy) return;
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*,video/*";
+    input.hidden = true;
+    document.body.appendChild(input);
+
+    input.onchange = async function(){
+      const file = input.files && input.files[0];
+
+      if(!file){
+        input.remove();
+        return;
+      }
+
+      busy = true;
+      const form = new FormData();
+      form.append("file", file);
+      toast("กำลังอัปโหลด...");
+
+      try{
+        const response = await fetch(url, {
+          method: "POST",
+          body: form
+        });
+
+        if(!response.ok){
+          throw new Error(await response.text());
+        }
+
+        toast("อัปโหลดแล้ว");
+
+        setTimeout(function(){
+          location.reload();
+        }, 350);
+      }catch(error){
+        console.error(error);
+        toast("อัปโหลดไม่สำเร็จ");
+        busy = false;
+      }finally{
+        setTimeout(function(){
+          input.remove();
+        }, 500);
+      }
+    };
+
+    input.click();
+  }
+
+  function stop(event){
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+  }
+
+  function addFixedButtons(){
+    removeOldButtons();
+
+    const cards = Array.from(
+      document.querySelectorAll("#grid .card")
+    );
+
+    cards.forEach(function(card, index){
+      const page = pages[index];
+
+      if(!page || !page.id) return;
+
+      card.style.setProperty(
+        "position",
+        "relative",
+        "important"
+      );
+
+      const oldNew = card.querySelector(
+        ".infini-fixed-card-upload"
+      );
+
+      if(oldNew){
+        oldNew.dataset.pageId = page.id;
+        return;
+      }
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "infini-fixed-card-upload";
+      button.dataset.pageId = page.id;
+      button.setAttribute(
+        "aria-label",
+        "แตะเพื่ออัปโหลดรูปหรือวิดีโอ"
+      );
+      button.textContent = "↥";
+
+      button.addEventListener("pointerdown", stop, true);
+      button.addEventListener("touchstart", stop, {
+        capture: true,
+        passive: false
+      });
+
+      button.addEventListener("click", function(event){
+        stop(event);
+
+        uploadTo(
+          "/api/pages/" +
+          encodeURIComponent(page.id) +
+          "/upload"
+        );
+      }, true);
+
+      card.appendChild(button);
+    });
+  }
+
+  async function loadPages(){
+    try{
+      const response = await fetch("/api/state", {
+        cache: "no-store"
+      });
+
+      if(!response.ok) return;
+
+      const state = await response.json();
+      pages = state.pages || [];
+    }catch(error){
+      console.error(error);
+    }
+  }
+
+  async function start(){
+    await loadPages();
+    addFixedButtons();
+
+    let tries = 0;
+
+    const timer = setInterval(function(){
+      tries += 1;
+      addFixedButtons();
+
+      if(tries >= 32){
+        clearInterval(timer);
+      }
+    }, 250);
+
+    let queued = false;
+
+    const observer = new MutationObserver(function(){
+      if(queued) return;
+
+      queued = true;
+
+      setTimeout(function(){
+        queued = false;
+        addFixedButtons();
+      }, 80);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    setTimeout(function(){
+      observer.disconnect();
+    }, 15000);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", start);
+  }else{
+    start();
+  }
+})();
+</script>
+"""
+
+
+ID_HOME_SCRIPT = r"""
+<script>
+(function(){
+  if(window.__INFINI_FORCE_AI_SHOP_BAR_V2__) return;
+  window.__INFINI_FORCE_AI_SHOP_BAR_V2__ = true;
+
+  function clean(value){
+    return String(value || "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function findGalleryHeading(){
+    return Array.from(
+      document.querySelectorAll("body *")
+    ).find(function(element){
+      if(element.children.length !== 0) return false;
+
+      const text = clean(element.textContent);
+
+      return (
+        text === "คลังภาพ" ||
+        text.includes("คลังภาพ")
+      );
+    }) || null;
+  }
+
+  function findGallerySection(heading){
+    if(!heading) return null;
+
+    let node = heading.parentElement;
+    let best = null;
+
+    while(node && node !== document.body){
+      const rect = node.getBoundingClientRect();
+      const images = node.querySelectorAll("img").length;
+      const text = clean(node.textContent);
+
+      if(
+        rect.width >= 250 &&
+        rect.height >= 100 &&
+        text.includes("คลังภาพ")
+      ){
+        best = node;
+
+        if(images >= 2){
+          return node;
+        }
+      }
+
+      node = node.parentElement;
+    }
+
+    return best;
+  }
+
+  function addBar(){
+    const existing = document.getElementById(
+      "infiniAiShopBarV2"
+    );
+
+    if(existing) return true;
+
+    const heading = findGalleryHeading();
+    const section = findGallerySection(heading);
+
+    if(!heading || !section) return false;
+
+    const bar = document.createElement("a");
+    bar.id = "infiniAiShopBarV2";
+    bar.className = "infini-ai-shop-bar";
+    bar.href = "/ai-shop";
+
+    bar.innerHTML = `
+      <div class="infini-ai-shop-copy">
+        <b>✦ เข้า AI จัดร้าน</b>
+        <small>
+          ให้ AI ช่วยวางรูปและเตรียมหน้าร้าน
+        </small>
+      </div>
+
+      <span class="infini-ai-shop-go">
+        →
+      </span>
+    `;
+
+    /*
+      วางต่อจากแถวหัวข้อคลังภาพ
+      ไม่ต้องพึ่งข้อความ “เพิ่มรูป”
+    */
+    const headingRow =
+      heading.parentElement &&
+      heading.parentElement !== section
+        ? heading.parentElement
+        : heading;
+
+    headingRow.insertAdjacentElement(
+      "afterend",
+      bar
+    );
+
+    return true;
+  }
+
+  function start(){
+    if(addBar()) return;
+
+    let tries = 0;
+
+    const timer = setInterval(function(){
+      tries += 1;
+
+      if(addBar() || tries >= 30){
+        clearInterval(timer);
+      }
+    }, 300);
+
+    let queued = false;
+
+    const observer = new MutationObserver(function(){
+      if(queued) return;
+
+      queued = true;
+
+      setTimeout(function(){
+        queued = false;
+        addBar();
+      }, 100);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    setTimeout(function(){
+      observer.disconnect();
+    }, 15000);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", start);
+  }else{
+    start();
+  }
+})();
+</script>
+"""
+
+
+class FixUploadAiBarMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+
+        content_type = (
+            response.headers
+            .get("content-type", "")
+            .lower()
+        )
+
+        if "text/html" not in content_type:
+            return response
+
+        path = request.url.path
+        inject = ""
+
+        if path == "/":
+            inject = STYLE + CREATIVE_SCRIPT
+
+        elif (
+            path == "/id-home"
+            or path.startswith("/id-home/")
+            or path == "/id"
+            or path.startswith("/id/")
+            or path == "/member/id"
+            or path.startswith("/member/id/")
+        ):
+            inject = STYLE + ID_HOME_SCRIPT
+
+        else:
+            return response
+
+        iterator = getattr(
+            response,
+            "body_iterator",
+            None,
+        )
+
+        if iterator is None:
+            return response
+
+        chunks = []
+
+        async for chunk in iterator:
+            chunks.append(chunk)
+
+        raw = b"".join(chunks)
+
+        try:
+            html = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return Response(
+                raw,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type="text/html",
+            )
+
+        if MARKER not in html:
+            marked = f"<!-- {MARKER} -->"
+            inject = marked + inject
+
+            if "</body>" in html:
+                html = html.replace(
+                    "</body>",
+                    inject + "\n</body>",
+                    1,
+                )
+            else:
+                html += inject
+
+        headers = dict(response.headers)
+        headers.pop("content-length", None)
+        headers.pop("content-encoding", None)
+
+        return Response(
+            html,
+            status_code=response.status_code,
+            headers=headers,
+            media_type="text/html",
+        )
+
+
+def install_fix_upload_ai_bar_7000(app):
+    marker = "_infini_fix_upload_ai_bar_v2"
+
+    if getattr(app.state, marker, False):
+        return
+
+    app.add_middleware(FixUploadAiBarMiddleware)
+    setattr(app.state, marker, True)

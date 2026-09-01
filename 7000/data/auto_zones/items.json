@@ -1,0 +1,16 @@
+{
+  "zones": {
+    "private": {
+      "items": []
+    },
+    "shop": {
+      "items": []
+    },
+    "office": {
+      "items": []
+    },
+    "portfolio": {
+      "items": []
+    }
+  }
+}

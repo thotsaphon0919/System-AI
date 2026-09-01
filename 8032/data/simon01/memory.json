@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "history": [
+    {
+      "memory_id": "1b6466fe-4587-43de-9b67-9004e9546a28",
+      "room_id": "life_simon01",
+      "user_text": "เพื่อน",
+      "ai_text": "❌ OpenAI: ตรวจสอบ API Key อีกครั้ง",
+      "provider": "openai",
+      "model": "v1.0-final",
+      "created_at": "2026-07-03T17:53:47.007679"
+    },
+    {
+      "memory_id": "297d2740-4f4b-4e66-a507-f4e110e14d4d",
+      "room_id": "store_simon01",
+      "user_text": "อัปโหลดไฟล์: 1782914952063.mp4",
+      "ai_text": "บันทึกสำเร็จ: store_simon01_1783085863_1782914952063.mp4",
+      "provider": "system",
+      "model": "storage",
+      "created_at": "2026-07-03T20:37:43.904808"
+    },
+    {
+      "memory_id": "9b6a67e7-9ee9-47f4-b3db-eaf0adbf6f7a",
+      "room_id": "life_simon01",
+      "user_text": "เพื่อน",
+      "ai_text": "❌ OpenAI: ตรวจสอบ API Key อีกครั้ง",
+      "provider": "openai",
+      "model": "v1.1",
+      "created_at": "2026-07-03T22:37:39.012000"
+    },
+    {
+      "memory_id": "f77bc869-b389-4190-bd3c-1966b73e5d45",
+      "room_id": "life_simon01",
+      "user_text": "อัปโหลดไฟล์: 1781802152922.mp4",
+      "ai_text": "บันทึกสำเร็จ: life_simon01_1783093110_1781802152922.mp4",
+      "provider": "system",
+      "model": "storage",
+      "created_at": "2026-07-03T22:38:30.413588"
+    }
+  ]
+}

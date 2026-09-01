@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_name or "INFINI" }}{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+        html, body { background: #1e1e1e; color: #fff; min-height: 100%; }
+        a { color: inherit; text-decoration: none; }
+        img { max-width: 100%; display: block; }
+
+        .container {
+            width: 100%; max-width: 480px; margin: 0 auto; min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            background: #252526; border-radius: 16px; padding: 28px 24px;
+            border: 1px solid #ff6b0030; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .card h2 { color: #ff6b00; margin-bottom: 20px; font-size: 22px; }
+
+        input, select, textarea {
+            width: 100%; padding: 12px; border-radius: 10px;
+            border: 1px solid #ff6b0050; background: #1e1e1e; color: #fff;
+            margin-bottom: 12px; font-size: 15px;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #ff6b00; }
+
+        .btn {
+            display: block; width: 100%; text-align: center;
+            background: #ff6b00; color: #000; font-weight: bold; border: none;
+            padding: 13px; border-radius: 10px; cursor: pointer; font-size: 15px;
+            margin-top: 6px;
+        }
+        .btn:hover { filter: brightness(1.08); }
+        .btn-outline {
+            background: transparent; color: #ff6b00;
+            border: 1px solid #ff6b0060; margin-top: 12px;
+        }
+        .error {
+            background: rgba(255, 59, 59, 0.13); color: #ff6b6b;
+            padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; font-size: 14px;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+{% block content %}{% endblock %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

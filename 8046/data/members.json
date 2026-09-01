@@ -1,0 +1,19 @@
+{
+  "members": {
+    "INF-648070": {
+      "member_id": "INF-648070",
+      "display_name": "Simonlaeng",
+      "username": "simonlaeng",
+      "password_salt": "ab5ac256a290a6ec2a5550eb3450bb8c",
+      "password_hash": "2d8b20dfd7b331e53e45a744e06ba802f3ab1d2f2d826e007530c61d122907b1",
+      "bio": "",
+      "contact": "",
+      "link": "",
+      "profile_image": "INF-648070-ba6a806bd0.png",
+      "points": 0,
+      "wallet_points": 0,
+      "level": "Member",
+      "joined_at": "2026-07-20 11:51"
+    }
+  }
+}

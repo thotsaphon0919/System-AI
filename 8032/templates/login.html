@@ -1,0 +1,16 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="card">
+        <h2>เข้าสู่ระบบ</h2>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        <form method="post" action="/api/login">
+            <input name="username" placeholder="ชื่อผู้ใช้" required>
+            <input name="password" type="password" placeholder="รหัสผ่าน" required>
+            <button type="submit" class="btn">เข้าสู่ระบบ</button>
+        </form>
+        <a href="/register" class="btn btn-outline">สมัครสมาชิกใหม่</a>
+    </div>
+</div>
+{% endblock %}

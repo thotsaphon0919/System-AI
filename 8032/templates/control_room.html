@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.nexus{
+  max-width:980px;
+  margin:auto;
+  padding:18px;
+  color:#eef7ff;
+}
+.nexus-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:16px;
+}
+.nexus-head h2{
+  margin:0;
+  font-size:24px;
+}
+.nexus-head a{
+  color:#ff6b8b;
+  text-decoration:none;
+}
+.nexus-panel{
+  background:linear-gradient(145deg,#091326,#07101f);
+  border:1px solid rgba(65,190,255,.35);
+  border-radius:20px;
+  padding:16px;
+  box-shadow:0 0 25px rgba(0,145,255,.08);
+}
+.nexus-search{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+}
+.nexus-search input{
+  width:100%;
+  box-sizing:border-box;
+  padding:15px;
+  border-radius:15px;
+  border:1px solid rgba(80,190,255,.4);
+  background:#09172b;
+  color:white;
+  font-size:15px;
+}
+.nexus-btn{
+  border:0;
+  border-radius:15px;
+  padding:13px 17px;
+  color:white;
+  font-weight:800;
+  cursor:pointer;
+  background:linear-gradient(90deg,#19bdf3,#8059ff);
+}
+.upload-row{
+  margin-top:12px;
+}
+.upload-row input{
+  display:none;
+}
+.upload-preview{
+  display:none;
+  margin-top:12px;
+  max-height:220px;
+  width:100%;
+  object-fit:contain;
+  border-radius:14px;
+}
+.chat-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:16px;
+}
+.chat-card{
+  min-height:390px;
+  display:flex;
+  flex-direction:column;
+}
+.chat-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+.chat-title h3{
+  margin:0;
+}
+.chat-status{
+  font-size:12px;
+  color:#58e6ac;
+}
+.chat-log{
+  flex:1;
+  min-height:250px;
+  max-height:350px;
+  overflow-y:auto;
+  padding:10px;
+  border-radius:14px;
+  background:#050c18;
+}
+.msg{
+  max-width:83%;
+  margin:7px 0;
+  padding:10px 12px;
+  border-radius:14px;
+  line-height:1.4;
+  word-break:break-word;
+}
+.msg.me{
+  margin-left:auto;
+  background:linear-gradient(135deg,#157fc0,#7048df);
+}
+.msg.other{
+  background:#142138;
+}
+.chat-send{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+  margin-top:10px;
+}
+.chat-send input{
+  min-width:0;
+  padding:12px;
+  border-radius:13px;
+  border:1px solid rgba(80,190,255,.35);
+  background:#09172b;
+  color:white;
+}
+.tool-title{
+  margin:22px 0 10px;
+}
+.tool-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+.tool{
+  min-height:105px;
+  padding:14px;
+  border-radius:18px;
+  border:1px solid rgba(90,190,255,.32);
+  background:#0a162a;
+  color:white;
+  text-decoration:none;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.tool strong{
+  font-size:16px;
+  margin-bottom:5px;
+}
+.tool span{
+  color:#8fa4bf;
+  font-size:12px;
+}
+@media(max-width:700px){
+  .chat-grid{grid-template-columns:1fr}
+  .tool-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+
+<main class="nexus">
+  <div class="nexus-head">
+    <div>
+      <small>INFINI NEXUS HUB</small>
+      <h2>ห้องควบคุม</h2>
+    </div>
+    <a href="/logout">ออกจากระบบ</a>
+  </div>
+
+  <section class="nexus-panel">
+    <div class="nexus-search">
+      <input id="nexus-search"
+             placeholder="ค้นหาแผ่น คน แอป เว็บไซต์ หรือวางลิงก์">
+      <button class="nexus-btn" id="nexus-go" type="button">ไป</button>
+    </div>
+
+    <div class="upload-row">
+      <label class="nexus-btn" for="nexus-upload"
+             style="display:block;text-align:center;">
+        ⬆ อัปโหลดรูป
+      </label>
+      <input id="nexus-upload" type="file" accept="image/*,video/*">
+      <img id="nexus-preview" class="upload-preview" alt="ภาพตัวอย่าง">
+    </div>
+  </section>
+
+  <section class="chat-grid">
+    <div class="nexus-panel chat-card">
+      <div class="chat-title">
+        <h3>✦ แชท AI</h3>
+        <span class="chat-status">พร้อมรับข้อความ</span>
+      </div>
+      <div class="chat-log" id="ai-log">
+        <div class="msg other">
+          สวัสดีครับ ส่งโจทย์หรือไอเดียของคุณมาได้เลย
+        </div>
+      </div>
+      <div class="chat-send">
+        <input id="ai-input" placeholder="พิมพ์คุยกับ AI">
+        <button class="nexus-btn" id="ai-send" type="button">ส่ง</button>
+      </div>
+    </div>
+
+    <div class="nexus-panel chat-card">
+      <div class="chat-title">
+        <h3>☻ แชทเพื่อน</h3>
+        <a class="chat-status" href="/friends" style="text-decoration:none;">หน้ารวมเพื่อน →</a>
+      </div>
+      <div class="chat-log" id="friend-log">
+        <div class="msg other">
+          ใช้พื้นที่นี้คุยงาน ส่งแนวคิด และนัดดิวกัน
+        </div>
+      </div>
+      <div class="chat-send">
+        <input id="friend-input" placeholder="พิมพ์ข้อความถึงเพื่อน">
+        <button class="nexus-btn" id="friend-send" type="button">ส่ง</button>
+      </div>
+    </div>
+  </section>
+
+  <h3 class="tool-title">เครื่องมือและธุรกรรม</h3>
+
+  <section class="tool-grid">
+    <a class="tool" href="/workspace">
+      <strong>▦ แผ่นงาน</strong>
+      <span>{{ sheets|length }} แผ่นในพื้นที่ของคุณ</span>
+    </a>
+
+    <a class="tool" href="/workspace">
+      <strong>▣ คลังไฟล์</strong>
+      <span>รูป วิดีโอ และเอกสาร</span>
+    </a>
+
+    <a class="tool" href="/docs">
+      <strong>⇄ ธุรกรรม</strong>
+      <span>ดิวงาน ลิงก์ และการเชื่อมต่อ</span>
+    </a>
+
+    <a class="tool" href="/docs">
+      <strong>⌘ API</strong>
+      <span>เปิดหน้าทดสอบ API</span>
+    </a>
+
+    <a class="tool" href="/workspace#warp">
+      <strong>◎ WARP</strong>
+      <span>ตัวส่ง ตัวรับ และปลายทาง</span>
+    </a>
+
+    {% if sheets %}
+    <a class="tool" href="/sheet/{{ sheets[-1].id }}">
+      <strong>→ เปิดแผ่นล่าสุด</strong>
+      <span>{{ sheets[-1].title }}</span>
+    </a>
+    {% else %}
+    <div class="tool">
+      <strong>＋ สร้างแผ่น</strong>
+      <span>ยังไม่มีแผ่นงาน</span>
+    </div>
+    {% endif %}
+  </section>
+</main>
+
+<script>
+(() => {
+  function addMessage(log, text, type) {
+    const bubble = document.createElement("div");
+    bubble.className = `msg ${type}`;
+    bubble.textContent = text;
+    log.appendChild(bubble);
+    log.scrollTop = log.scrollHeight;
+  }
+
+    function bindChat(inputId, buttonId, logId, mode) {
+        const input = document.getElementById(inputId);
+        const button = document.getElementById(buttonId);
+        const log = document.getElementById(logId);
+
+        let memoryMessages = [];
+
+        async function saveMemory(text, role) {
+            const response = await fetch("/api/infini-memory", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    text: text,
+                    role: role,
+                    mode: mode
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+        }
+
+        async function loadMemory() {
+            try {
+                const response = await fetch("/api/infini-memory");
+                if (!response.ok) return;
+
+                const data = await response.json();
+
+                memoryMessages = (data.messages || []).filter(
+                    item => item.mode === mode
+                );
+
+                memoryMessages.forEach(item => {
+                    addMessage(
+                        log,
+                        item.text,
+                        item.role === "user" ? "me" : "other"
+                    );
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function createLocalReply(text) {
+            const previousUsers = memoryMessages.filter(
+                item => item.role === "user"
+            );
+
+            const previous = previousUsers.length > 1
+                ? previousUsers[previousUsers.length - 2].text
+                : "";
+
+            if (
+                text.includes("จำได้ไหม") ||
+                text.includes("เมื่อกี้") ||
+                text.includes("ก่อนหน้านี้")
+            ) {
+                return previous
+                    ? `จำได้ครับ ก่อนหน้านี้คุณพูดว่า “${previous}”`
+                    : "ตอนนี้ยังไม่มีข้อความก่อนหน้าให้ผมจำครับ";
+            }
+
+            const response = await fetch("/api/infini-knowledge/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    question: text
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+
+            const data = await response.json();
+
+            if (data.matched) {
+                return data.answer;
+            }
+
+            return `ผมจำข้อความนี้ไว้แล้วครับ: “${text}”`;
+        }
+
+        async function send() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage(log, text, "me");
+            input.value = "";
+
+            try {
+                await saveMemory(text, "user");
+
+                memoryMessages.push({
+                    text: text,
+                    role: "user",
+                    mode: mode
+                });
+
+                if (mode === "ai") {
+                    const reply = await createLocalReply(text);
+
+                    setTimeout(async () => {
+                        addMessage(log, reply, "other");
+                        await saveMemory(reply, "assistant");
+
+                        memoryMessages.push({
+                            text: reply,
+                            role: "assistant",
+                            mode: mode
+                        });
+                    }, 350);
+                }
+            } catch (error) {
+                addMessage(log, "บันทึกความทรงจำไม่สำเร็จ", "other");
+                console.error(error);
+            }
+        }
+
+        button.addEventListener("click", send);
+
+        input.addEventListener("keydown", event => {
+            if (event.key === "Enter") send();
+        });
+
+        loadMemory();
+    }
+  bindChat("ai-input", "ai-send", "ai-log", "ai");
+  bindChat("friend-input", "friend-send", "friend-log", "friend");
+
+  const search = document.getElementById("nexus-search");
+  document.getElementById("nexus-go").addEventListener("click", () => {
+    const value = search.value.trim();
+    if (!value) return;
+
+    if (
+      value.startsWith("/") ||
+      value.startsWith("http://") ||
+      value.startsWith("https://") ||
+      value.includes("://")
+    ) {
+      window.location.href = value;
+      return;
+    }
+
+    window.location.href =
+      "https://www.google.com/search?q=" + encodeURIComponent(value);
+  });
+
+  const upload = document.getElementById("nexus-upload");
+  const preview = document.getElementById("nexus-preview");
+
+  upload.addEventListener("change", () => {
+    const file = upload.files[0];
+    if (!file || !file.type.startsWith("image/")) return;
+
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+  });
+})();
+</script>
+
+{% endblock %}

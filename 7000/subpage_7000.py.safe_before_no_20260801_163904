@@ -1,0 +1,639 @@
+from __future__ import annotations
+
+import html
+import json
+import re
+import shutil
+import time
+from pathlib import Path
+from typing import Any
+
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "subpage_7000_data"
+UPLOAD_DIR = DATA_DIR / "uploads"
+DATA_FILE = DATA_DIR / "pages.json"
+
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+DEFAULT_DATA: dict[str, Any] = {
+    "pages": {
+        "1": {
+            "number": "1",
+            "title": "no.1",
+            "detail": "",
+            "link": "",
+            "media": "",
+            "parent": "",
+            "children": [],
+        }
+    }
+}
+
+
+def load_data() -> dict[str, Any]:
+    if not DATA_FILE.exists():
+        save_data(DEFAULT_DATA)
+        return json.loads(json.dumps(DEFAULT_DATA))
+
+    try:
+        data = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+        if not isinstance(data, dict) or "pages" not in data:
+            raise ValueError("invalid data")
+        return data
+    except Exception:
+        broken = DATA_FILE.with_suffix(f".broken-{int(time.time())}.json")
+        shutil.copy2(DATA_FILE, broken)
+        save_data(DEFAULT_DATA)
+        return json.loads(json.dumps(DEFAULT_DATA))
+
+
+def save_data(data: dict[str, Any]) -> None:
+    temp = DATA_FILE.with_suffix(".tmp")
+    temp.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    temp.replace(DATA_FILE)
+
+
+def valid_number(number: str) -> bool:
+    return bool(re.fullmatch(r"\d+(?:\.\d+)*", number))
+
+
+def next_child_number(parent: str, children: list[str]) -> str:
+    prefix = f"{parent}."
+    used: list[int] = []
+
+    for child in children:
+        if child.startswith(prefix):
+            tail = child[len(prefix):]
+            if tail.isdigit():
+                used.append(int(tail))
+
+    next_index = max(used, default=0) + 1
+    return f"{parent}.{next_index}"
+
+
+def page_shell(title: str, body: str) -> str:
+    return f"""
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>{html.escape(title)}</title>
+<style>
+:root {{
+  --bg:#080300;
+  --panel:#160900;
+  --panel2:#251000;
+  --line:#a85a10;
+  --orange:#ff9418;
+  --orange2:#ffb63e;
+  --text:#fff6eb;
+  --muted:#bca895;
+}}
+* {{ box-sizing:border-box; }}
+html,body {{
+  margin:0;
+  background:radial-gradient(circle at top,#301300 0,#100600 30%,#050200 100%);
+  color:var(--text);
+  font-family:Arial,Tahoma,sans-serif;
+}}
+body {{ min-height:100vh; }}
+.topbar {{
+  position:sticky;
+  top:0;
+  z-index:30;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:14px;
+  background:rgba(5,2,0,.96);
+  border-bottom:1px solid #65320d;
+  backdrop-filter:blur(10px);
+}}
+.back {{
+  flex:0 0 auto;
+  color:var(--orange2);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:11px 14px;
+  text-decoration:none;
+  font-weight:800;
+}}
+.brand {{
+  flex:1;
+  text-align:center;
+  color:var(--orange);
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:2px;
+}}
+.wrap {{
+  width:min(760px,100%);
+  margin:auto;
+  padding:18px 18px 110px;
+}}
+.card {{
+  border:1px solid #7e3d0c;
+  border-radius:28px;
+  padding:20px;
+  background:linear-gradient(145deg,rgba(40,16,0,.97),rgba(8,3,0,.98));
+  box-shadow:0 15px 45px rgba(0,0,0,.45);
+  margin-bottom:18px;
+}}
+h1,h2,h3 {{ margin-top:0; }}
+h1 {{ color:var(--orange); }}
+label {{
+  display:block;
+  color:var(--orange2);
+  font-weight:800;
+  margin:16px 0 8px;
+}}
+input,textarea {{
+  width:100%;
+  border:1px solid #7e3d0c;
+  border-radius:18px;
+  padding:14px 16px;
+  background:#0b0401;
+  color:white;
+  font-size:16px;
+  outline:none;
+}}
+textarea {{
+  min-height:130px;
+  resize:vertical;
+}}
+input:focus,textarea:focus {{
+  border-color:var(--orange);
+  box-shadow:0 0 0 3px rgba(255,148,24,.12);
+}}
+.actions {{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:18px;
+}}
+button,.button {{
+  border:0;
+  border-radius:18px;
+  padding:14px 18px;
+  background:linear-gradient(#ffbd43,#ff8a00);
+  color:#1d0900;
+  font-weight:900;
+  font-size:16px;
+  text-decoration:none;
+  cursor:pointer;
+}}
+.button.secondary,button.secondary {{
+  color:var(--orange2);
+  background:#110600;
+  border:1px solid var(--line);
+}}
+.search-row {{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+}}
+.media {{
+  display:block;
+  width:100%;
+  max-height:68vh;
+  object-fit:contain;
+  border-radius:22px;
+  border:1px solid #713508;
+  background:#000;
+  margin-top:15px;
+}}
+.grid {{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}}
+.slot {{
+  min-height:210px;
+  border:1px solid #75400e;
+  border-radius:25px;
+  overflow:hidden;
+  background:linear-gradient(145deg,#2a1100,#080300);
+  text-decoration:none;
+  color:white;
+  position:relative;
+}}
+.slot img,.slot video {{
+  width:100%;
+  height:165px;
+  object-fit:cover;
+  display:block;
+  background:#000;
+}}
+.slot-empty {{
+  height:165px;
+  display:grid;
+  place-items:center;
+  font-size:48px;
+  color:#77400e;
+}}
+.slot-info {{
+  padding:13px;
+}}
+.slot-number {{
+  font-size:24px;
+  font-weight:900;
+}}
+.muted {{ color:var(--muted); }}
+.notice {{
+  padding:12px 14px;
+  border:1px solid #74400e;
+  border-radius:15px;
+  color:#ffd9ad;
+  background:#1a0a00;
+}}
+.danger {{
+  background:#2b0700 !important;
+  color:#ffb0a0 !important;
+  border:1px solid #9e2919 !important;
+}}
+@media(max-width:480px) {{
+  .wrap {{ padding-left:12px;padding-right:12px; }}
+  .card {{ padding:16px;border-radius:24px; }}
+  .slot {{ min-height:190px; }}
+  .slot img,.slot video,.slot-empty {{ height:145px; }}
+}}
+</style>
+</head>
+<body>
+{body}
+</body>
+</html>
+"""
+
+
+def media_html(media: str, css_class: str = "media") -> str:
+    if not media:
+        return ""
+
+    safe = html.escape(media, quote=True)
+    suffix = Path(media).suffix.lower()
+
+    if suffix in {".mp4", ".webm", ".mov", ".m4v"}:
+        return f'<video class="{css_class}" src="{safe}" controls playsinline preload="metadata"></video>'
+
+    return f'<img class="{css_class}" src="{safe}" alt="media">'
+
+
+def install_subpage_7000(app: FastAPI) -> None:
+    # mount ครั้งเดียว
+    mounted = any(getattr(route, "path", None) == "/subpage-media" for route in app.routes)
+    if not mounted:
+        app.mount(
+            "/subpage-media",
+            StaticFiles(directory=str(UPLOAD_DIR)),
+            name="subpage-media",
+        )
+
+    @app.get("/subpages", response_class=HTMLResponse)
+    async def subpages_root() -> RedirectResponse:
+        return RedirectResponse("/subpages/1", status_code=303)
+
+    @app.get("/subpages/{number}", response_class=HTMLResponse)
+    async def open_page(number: str) -> HTMLResponse:
+        if not valid_number(number):
+            raise HTTPException(400, "เลขหน้าไม่ถูกต้อง")
+
+        data = load_data()
+        page = data["pages"].get(number)
+        if not page:
+            raise HTTPException(404, "ไม่พบหน้านี้")
+
+        children_html = ""
+        for child_number in page.get("children", []):
+            child = data["pages"].get(child_number)
+            if not child:
+                continue
+
+            media = child.get("media", "")
+            if media:
+                preview = media_html(media, "slot-media")
+            else:
+                preview = '<div class="slot-empty">+</div>'
+
+            children_html += f"""
+<a class="slot" href="/subpages/{html.escape(child_number)}">
+  {preview}
+  <div class="slot-info">
+    <div class="slot-number">{html.escape(child_number)}</div>
+    <div class="muted">{html.escape(child.get("title") or "ยังไม่มีชื่อ")}</div>
+  </div>
+</a>
+"""
+
+        if not children_html:
+            children_html = """
+<div class="notice" style="grid-column:1/-1">
+ยังไม่มีหน้าย่อย กด “เพิ่มหน้าย่อย” ด้านล่างเพื่อสร้างหน้าแรก
+</div>
+"""
+
+        parent = page.get("parent", "")
+        back_url = f"/subpages/{parent}" if parent else "/id-home"
+
+        current_media = media_html(page.get("media", ""))
+
+        link = (page.get("link") or "").strip()
+        safe_link = html.escape(link, quote=True)
+        link_buttons = ""
+        if link:
+            link_buttons = f"""
+<a class="button secondary" href="{safe_link}" target="_blank" rel="noopener">
+เปิดเว็บไซต์
+</a>
+"""
+
+        body = f"""
+<div class="topbar">
+  <a class="back" href="{html.escape(back_url)}">← กลับ</a>
+  <div class="brand">INFINI PAGE {html.escape(number)}</div>
+</div>
+
+<main class="wrap">
+
+  <section class="card">
+    <h1>{html.escape(page.get("title") or number)}</h1>
+
+    <form class="search-row" onsubmit="openSearch(event)">
+      <input id="webSearch" type="text"
+        placeholder="ค้นหาเว็บ หรือวาง URL..."
+        value="{safe_link}">
+      <button type="submit">ไป</button>
+    </form>
+
+    <script>
+    function openSearch(event) {{
+      event.preventDefault();
+      let value = document.getElementById('webSearch').value.trim();
+      if (!value) return;
+
+      if (!/^https?:\\/\\//i.test(value)) {{
+        if (value.includes('.') && !value.includes(' ')) {{
+          value = 'https://' + value;
+        }} else {{
+          value = 'https://www.google.com/search?q=' + encodeURIComponent(value);
+        }}
+      }}
+      window.open(value, '_blank', 'noopener');
+    }}
+    </script>
+
+    {current_media}
+
+    <div class="actions">
+      <a class="button secondary" href="/subpages/{html.escape(number)}/edit">
+        จัดการหน้านี้
+      </a>
+      {link_buttons}
+    </div>
+
+    {
+      f'<p style="white-space:pre-wrap;line-height:1.65">{html.escape(page.get("detail") or "")}</p>'
+      if page.get("detail") else ""
+    }
+  </section>
+
+  <section class="card">
+    <h2>หน้าย่อยของ {html.escape(number)}</h2>
+    <div class="grid">
+      {children_html}
+    </div>
+
+    <form method="post" action="/subpages/{html.escape(number)}/add-child">
+      <button style="width:100%;margin-top:20px;font-size:22px">
+        ＋ เพิ่มหน้าย่อย
+      </button>
+    </form>
+  </section>
+
+</main>
+"""
+        # แก้ class ของ preview ที่สร้างจาก helper
+        body = body.replace('class="slot-media"', 'style="width:100%;height:165px;object-fit:cover;display:block;background:#000"')
+        return HTMLResponse(page_shell(f"INFINI {number}", body))
+
+    @app.post("/subpages/{parent}/add-child")
+    async def add_child(parent: str) -> RedirectResponse:
+        if not valid_number(parent):
+            raise HTTPException(400, "เลขหน้าไม่ถูกต้อง")
+
+        data = load_data()
+        parent_page = data["pages"].get(parent)
+        if not parent_page:
+            raise HTTPException(404, "ไม่พบหน้าต้นทาง")
+
+        child_number = next_child_number(
+            parent,
+            parent_page.setdefault("children", []),
+        )
+
+        data["pages"][child_number] = {
+            "number": child_number,
+            "title": child_number,
+            "detail": "",
+            "link": "",
+            "media": "",
+            "parent": parent,
+            "children": [],
+        }
+        parent_page["children"].append(child_number)
+        save_data(data)
+
+        return RedirectResponse(
+            f"/subpages/{child_number}/edit",
+            status_code=303,
+        )
+
+    @app.get("/subpages/{number}/edit", response_class=HTMLResponse)
+    async def edit_page(number: str) -> HTMLResponse:
+        if not valid_number(number):
+            raise HTTPException(400, "เลขหน้าไม่ถูกต้อง")
+
+        data = load_data()
+        page = data["pages"].get(number)
+        if not page:
+            raise HTTPException(404, "ไม่พบหน้านี้")
+
+        body = f"""
+<div class="topbar">
+  <a class="back" href="/subpages/{html.escape(number)}">← กลับ</a>
+  <div class="brand">จัดการ {html.escape(number)}</div>
+</div>
+
+<main class="wrap">
+  <form class="card"
+        method="post"
+        action="/subpages/{html.escape(number)}/save"
+        enctype="multipart/form-data">
+
+    <h1>หน้า {html.escape(number)}</h1>
+    <p class="muted">
+      กรอกเฉพาะส่วนที่ต้องการได้ ช่องที่เว้นว่างจะไม่แสดง
+    </p>
+
+    <label>ชื่อหน้า</label>
+    <input name="title"
+      value="{html.escape(page.get("title") or "", quote=True)}"
+      placeholder="เช่น ร้านเสื้อมือสอง">
+
+    <label>รายละเอียด</label>
+    <textarea name="detail"
+      placeholder="รายละเอียด ราคา สภาพ หรือข้อความอื่น ๆ">{html.escape(page.get("detail") or "")}</textarea>
+
+    <label>ลิงก์เว็บไซต์หรือวิดีโอภายนอก</label>
+    <input name="link"
+      value="{html.escape(page.get("link") or "", quote=True)}"
+      placeholder="https://...">
+
+    <label>อัปโหลดรูปหรือวิดีโอ</label>
+    <input type="file" name="media" accept="image/*,video/*">
+
+    {
+      '<div class="notice">มีไฟล์เดิมอยู่แล้ว อัปโหลดใหม่เพื่อแทนที่</div>'
+      if page.get("media") else ""
+    }
+
+    <div class="actions">
+      <button type="submit">บันทึก</button>
+      <a class="button secondary"
+         href="/subpages/{html.escape(number)}">
+         เปิดหน้า
+      </a>
+    </div>
+  </form>
+
+  <section class="card">
+    <h2>เพิ่มหน้าย่อยจาก {html.escape(number)}</h2>
+    <p class="muted">
+      ระบบจะออกเลขต่อให้อัตโนมัติ เช่น
+      {html.escape(number)}.1, {html.escape(number)}.2
+    </p>
+
+    <form method="post"
+          action="/subpages/{html.escape(number)}/add-child">
+      <button style="width:100%">＋ เพิ่มหน้าย่อย</button>
+    </form>
+  </section>
+
+  {
+    f'''
+    <section class="card">
+      <h2>ลบหน้านี้</h2>
+      <p class="muted">ลบได้เฉพาะหน้าที่ไม่มีหน้าย่อยอยู่ข้างใน</p>
+      <form method="post"
+            action="/subpages/{html.escape(number)}/delete"
+            onsubmit="return confirm('ยืนยันลบหน้า {html.escape(number)} หรือไม่?')">
+        <button class="danger" type="submit">ลบหน้านี้</button>
+      </form>
+    </section>
+    '''
+    if number != "1" else ""
+  }
+</main>
+"""
+        return HTMLResponse(page_shell(f"จัดการ {number}", body))
+
+    @app.post("/subpages/{number}/save")
+    async def save_page(
+        number: str,
+        title: str = Form(""),
+        detail: str = Form(""),
+        link: str = Form(""),
+        media: UploadFile | None = File(None),
+    ) -> RedirectResponse:
+        if not valid_number(number):
+            raise HTTPException(400, "เลขหน้าไม่ถูกต้อง")
+
+        data = load_data()
+        page = data["pages"].get(number)
+        if not page:
+            raise HTTPException(404, "ไม่พบหน้านี้")
+
+        page["title"] = title.strip()
+        page["detail"] = detail.strip()
+        page["link"] = link.strip()
+
+        if media and media.filename:
+            suffix = Path(media.filename).suffix.lower()
+            allowed = {
+                ".jpg", ".jpeg", ".png", ".webp", ".gif",
+                ".mp4", ".webm", ".mov", ".m4v",
+            }
+            if suffix not in allowed:
+                raise HTTPException(
+                    400,
+                    "รองรับเฉพาะรูปและวิดีโอ",
+                )
+
+            safe_number = number.replace(".", "_")
+            filename = f"{safe_number}_{int(time.time())}{suffix}"
+            destination = UPLOAD_DIR / filename
+
+            with destination.open("wb") as output:
+                shutil.copyfileobj(media.file, output)
+
+            old_media = page.get("media", "")
+            if old_media.startswith("/subpage-media/"):
+                old_path = UPLOAD_DIR / Path(old_media).name
+                if old_path.exists():
+                    old_path.unlink(missing_ok=True)
+
+            page["media"] = f"/subpage-media/{filename}"
+
+        save_data(data)
+        return RedirectResponse(
+            f"/subpages/{number}",
+            status_code=303,
+        )
+
+    @app.post("/subpages/{number}/delete")
+    async def delete_page(number: str) -> RedirectResponse:
+        if number == "1":
+            raise HTTPException(400, "ไม่สามารถลบหน้าหลักได้")
+
+        data = load_data()
+        page = data["pages"].get(number)
+        if not page:
+            raise HTTPException(404, "ไม่พบหน้านี้")
+
+        if page.get("children"):
+            raise HTTPException(
+                400,
+                "หน้านี้ยังมีหน้าย่อย ต้องลบหน้าย่อยก่อน",
+            )
+
+        media = page.get("media", "")
+        if media.startswith("/subpage-media/"):
+            media_path = UPLOAD_DIR / Path(media).name
+            media_path.unlink(missing_ok=True)
+
+        parent = page.get("parent", "")
+        parent_page = data["pages"].get(parent)
+        if parent_page:
+            parent_page["children"] = [
+                item
+                for item in parent_page.get("children", [])
+                if item != number
+            ]
+
+        del data["pages"][number]
+        save_data(data)
+
+        return RedirectResponse(
+            f"/subpages/{parent or '1'}",
+            status_code=303,
+        )

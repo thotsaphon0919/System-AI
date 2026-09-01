@@ -1,0 +1,73 @@
+{
+  "project": "AI Store Layout Engine",
+  "goal": "ให้ AI จัดร้าน วิเคราะห์เหตุผล และใช้ความรู้ที่เจ้าของระบบสะสมไว้ได้ โดยไม่ต้องแก้โค้ดหลักทุกครั้ง",
+  "phases": [
+    "Phase 1 : AI Engine",
+    "Phase 2 : Foundation Knowledge",
+    "Phase 3 : Domain Knowledge",
+    "Phase 4 : Quality Standard",
+    "Phase 5 : Creator Knowledge",
+    "Phase 6 : Annotated Images",
+    "Phase 7 : Scene Library",
+    "Phase 8 : Product Knowledge",
+    "Phase 9 : Layout Knowledge",
+    "Phase 10 : Knowledge Essence",
+    "Phase 11 : Controller",
+    "Phase 12 : AI Store Layout",
+    "Feedback Engine",
+    "Knowledge Management"
+  ],
+  "defaults": {
+    "foundation": [
+      "Composition",
+      "Color Theory",
+      "Lighting",
+      "Materials",
+      "Perspective",
+      "Balance",
+      "Spacing",
+      "Customer Flow",
+      "Visual Merchandising",
+      "Branding"
+    ],
+    "domains": [
+      "ร้านนาฬิกา",
+      "ร้านเสื้อผ้า",
+      "ร้านรองเท้า",
+      "ร้านเครื่องสำอาง",
+      "ร้านอาหาร",
+      "คาเฟ่",
+      "ร้านมือถือ",
+      "โชว์รูม",
+      "Booth",
+      "Exhibition"
+    ],
+    "scene_styles": [
+      "Luxury",
+      "Premium",
+      "Modern",
+      "Minimal",
+      "Industrial",
+      "Cartoon",
+      "Space",
+      "Classic",
+      "Japanese",
+      "Futuristic",
+      "Cyber Broken",
+      "Ancient Market",
+      "Card World"
+    ],
+    "layout_types": [
+      "Shelf Layout",
+      "Showcase",
+      "Counter",
+      "Island Display",
+      "Window Display",
+      "Entrance",
+      "Walkway",
+      "Promotion Area",
+      "Lighting Position"
+    ]
+  },
+  "items": []
+}

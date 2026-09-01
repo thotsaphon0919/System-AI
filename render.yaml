@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: infini-system-ai
+    runtime: python
+    plan: starter          # free tier sleeps on idle; starter keeps 3 backend processes alive reliably
+    buildCommand: |
+      pip install -r requirements.txt
+    startCommand: python start.py
+    envVars:
+      - key: NEON_DATABASE_URL
+        sync: false         # paste your Neon connection string in the Render dashboard
+      - key: CLOUDINARY_URL
+        sync: false         # paste your Cloudinary URL in the Render dashboard
+      - key: PYTHON_VERSION
+        value: 3.11.9

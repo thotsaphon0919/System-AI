@@ -1,0 +1,793 @@
+from fastapi import FastAPI, UploadFile, File, Request
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from pathlib import Path
+import uuid
+import json
+
+STATE_FILE = Path("id_entry_7000_state.json")
+UPLOAD_DIR = Path("id_entry_7000_uploads")
+
+ID_ENTRY_HTML = r'''
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>INFINI ID HOME</title>
+<style>
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  width:100%;
+  min-height:100%;
+  background:#050100;
+  color:#fff;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+body{overflow-x:hidden}
+.page{
+  min-height:100vh;
+  background:radial-gradient(circle at top,#170800,#050100 45%,#000);
+  padding-bottom:120px;
+}
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:30;
+  height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:0 14px;
+  background:rgba(0,0,0,.9);
+  border-bottom:1px solid rgba(255,132,0,.35);
+  backdrop-filter:blur(10px);
+}
+.brand{
+  color:#ff8a1c;
+  font-weight:900;
+  letter-spacing:.12em;
+  font-size:14px;
+}
+.hint{
+  color:#aaa;
+  font-size:12px;
+}
+.btn,label.btn{
+  border:1px solid rgba(255,132,0,.62);
+  background:rgba(0,0,0,.74);
+  color:#ffc17d;
+  border-radius:999px;
+  padding:10px 14px;
+  font-size:13px;
+  font-weight:900;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.btn.orange{
+  background:#ff9a1f;
+  color:#050505;
+  border:0;
+}
+input[type=file]{display:none}
+.hero{
+  height:46vh;
+  min-height:46vh;
+  position:relative;
+  overflow:hidden;
+  background:#111;
+  border-bottom:1px solid rgba(255,132,0,.3);
+}
+.hero img,.hero video{
+  width:100%;
+  height:46vh;
+  object-fit:cover;
+  display:block;
+}
+.empty{
+  width:100%;
+  height:100%;
+  min-height:inherit;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  color:#777;
+  background:radial-gradient(circle at center,#171717,#050505);
+}
+.upload-float{
+  position:absolute;
+  right:16px;
+  bottom:16px;
+  z-index:5;
+}
+.section{padding:14px}
+.card{
+  border:1px solid rgba(255,132,0,.28);
+  background:rgba(8,8,8,.9);
+  border-radius:24px;
+  padding:16px;
+  margin-bottom:14px;
+}
+.card-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:12px;
+}
+.card-title h2{
+  margin:0;
+  color:#ff9a2c;
+  font-size:20px;
+}
+.grid2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.label{
+  color:#aaa;
+  font-size:12px;
+  margin:8px 0 6px;
+  display:block;
+}
+.input{
+  width:100%;
+  border:1px solid rgba(255,255,255,.12);
+  background:#080808;
+  color:white;
+  border-radius:15px;
+  padding:12px;
+  font-size:14px;
+  outline:none;
+}
+textarea.input{
+  min-height:86px;
+  resize:vertical;
+}
+.creative-card{
+  min-height:190px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  border-radius:24px;
+  padding:18px;
+  border:1px solid rgba(255,132,0,.45);
+  background:
+    linear-gradient(to top,rgba(0,0,0,.9),rgba(0,0,0,.15)),
+    radial-gradient(circle at top,#351300,#080808 70%);
+  cursor:pointer;
+}
+.creative-card h2{
+  margin:0 0 8px;
+  color:#ff9a2c;
+  font-size:30px;
+  letter-spacing:.08em;
+}
+.creative-card p{
+  margin:0;
+  color:#bbb;
+  font-size:13px;
+}
+.zones{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.zone{
+  min-height:96px;
+  border-radius:18px;
+  padding:13px;
+  border:1px solid rgba(255,255,255,.1);
+  background:#090909;
+}
+.zone b{
+  color:#ff9a2c;
+  display:block;
+  margin-bottom:6px;
+}
+.zone span{
+  color:#aaa;
+  font-size:12px;
+}
+.gallery-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  padding-bottom:120px;
+}
+.gallery-cell{
+  aspect-ratio:1/1;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.1);
+  background:#111;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#666;
+  font-size:12px;
+}
+.gallery-cell img,.gallery-cell video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+/* Gate */
+.gate-wrap{
+  padding:14px 14px 150px;
+}
+.gate-card{
+  height:calc(100vh - 200px);
+  min-height:540px;
+  border-radius:30px;
+  border:1px solid rgba(255,132,0,.62);
+  background:#050505;
+  overflow:hidden;
+  position:relative;
+  box-shadow:0 22px 70px rgba(0,0,0,.65);
+}
+.gate-card img,.gate-card video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.gate-empty{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:24px;
+  background:
+    linear-gradient(to top,rgba(0,0,0,.92),rgba(0,0,0,.18)),
+    radial-gradient(circle at top,#301400,#050505 70%);
+}
+.gate-empty h1{
+  margin:0 0 10px;
+  color:#ff9a2c;
+  font-size:40px;
+  letter-spacing:.08em;
+}
+.gate-empty p{
+  margin:0;
+  color:#aaa;
+  font-size:14px;
+}
+.gate-actions{
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:18px;
+  z-index:20;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.gate-actions label,.gate-actions button{
+  min-height:62px;
+}
+.web-overlay{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:none;
+  flex-direction:column;
+  background:#030303;
+}
+.web-top{
+  height:64px;
+  display:flex;
+  gap:8px;
+  padding:10px;
+  background:#000;
+  border-bottom:1px solid rgba(255,132,0,.35);
+}
+.web-top input{
+  flex:1;
+  border-radius:999px;
+  border:1px solid rgba(255,132,0,.5);
+  background:#080808;
+  color:white;
+  padding:0 14px;
+}
+.web-frame{
+  flex:1;
+  border:0;
+  background:white;
+}
+</style>
+</head>
+<body>
+
+<div class="page" id="idPage">
+  <div class="topbar">
+    <div class="brand">INFINI ID HOME</div>
+    <div class="hint">กด Creative → เข้าตึก</div>
+    <button class="btn" onclick="openSearch()">ค้นหา</button>
+  </div>
+
+  <div class="hero" id="idCoverBox">
+    <div class="empty" id="idCoverEmpty">
+      <div>
+        <div style="font-size:30px">＋</div>
+        <b>อัปโหลดรูปปก ID</b>
+      </div>
+    </div>
+    <label class="btn upload-float">
+      อัปโหลด
+      <input id="idCoverInput" type="file" accept="image/*,video/*">
+    </label>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-title">
+        <h2>รายละเอียดเจ้าของ ID</h2>
+        <button class="btn" onclick="saveProfile()">บันทึก</button>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label class="label">ชื่อแสดงผล</label>
+          <input class="input" id="displayName" placeholder="SIMONLAENG">
+        </div>
+        <div>
+          <label class="label">username</label>
+          <input class="input" id="username" placeholder="Simonlaeng">
+        </div>
+        <div>
+          <label class="label">INFINI ID</label>
+          <input class="input" id="infiniId" placeholder="INF-000001">
+        </div>
+        <div>
+          <label class="label">สถานะ / เลเวล</label>
+          <input class="input" id="level" placeholder="Creator / Member">
+        </div>
+      </div>
+
+      <label class="label">คำอธิบายตัวเอง / ร้าน / โปรเจกต์</label>
+      <textarea class="input" id="bio" placeholder="เขียนรายละเอียดของตัวเอง"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="creative-card" onclick="location.href='/creative-gate'">
+        <h2>CREATIVE ROOM</h2>
+        <p>กดเพื่อไปหน้าตึกก่อน แล้วค่อยเข้าห้อง Creative เดิม</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><h2>เลือกโซน 4 โซน</h2></div>
+      <div class="zones">
+        <div class="zone"><b>ZONE 1</b><span>Gallery</span></div>
+        <div class="zone"><b>ZONE 2</b><span>Shop</span></div>
+        <div class="zone"><b>ZONE 3</b><span>Service</span></div>
+        <div class="zone"><b>ZONE 4</b><span>Friend / Fan</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <h2>คลังภาพ</h2>
+        <label class="btn">เพิ่มรูป<input id="galleryInput" type="file" accept="image/*,video/*" multiple></label>
+      </div>
+      <div class="gallery-grid" id="galleryGrid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="web-overlay" id="webOverlay">
+  <div class="web-top">
+    <input id="webInput" placeholder="ค้นหาเว็บ...">
+    <button class="btn orange" onclick="runSearch()">ค้นหา</button>
+    <button class="btn" onclick="closeSearch()">ปิด</button>
+  </div>
+  <iframe class="web-frame" id="webFrame"></iframe>
+</div>
+
+<script>
+let STATE = {};
+
+function mediaEl(src,type){
+  let el;
+  if(String(type||"").startsWith("video")){
+    el=document.createElement("video");
+    el.controls=true; el.loop=true; el.muted=true; el.playsInline=true;
+  }else{
+    el=document.createElement("img");
+  }
+  el.src=src;
+  return el;
+}
+
+function setBox(boxId, emptyId, src, type){
+  const box=document.getElementById(boxId);
+  const empty=document.getElementById(emptyId);
+  if(!box) return;
+  box.querySelectorAll("img,video").forEach(x=>x.remove());
+  if(empty) empty.style.display="none";
+  box.insertBefore(mediaEl(src,type), box.firstChild);
+}
+
+function uploadFile(file){
+  const form=new FormData();
+  form.append("file", file);
+  return fetch("/api/id-entry/upload",{method:"POST",body:form}).then(r=>r.json());
+}
+
+function saveState(){
+  return fetch("/api/id-entry/state",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(STATE||{})
+  });
+}
+
+function loadState(){
+  fetch("/api/id-entry/state?t="+Date.now())
+    .then(r=>r.json())
+    .then(d=>{
+      STATE=d||{};
+      applyState();
+    })
+    .catch(()=>{});
+}
+
+function applyState(){
+  ["displayName","username","infiniId","level","bio"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && STATE[id] !== undefined) el.value=STATE[id];
+  });
+
+  if(STATE.idCover){
+    setBox("idCoverBox","idCoverEmpty",STATE.idCover.src,STATE.idCover.type);
+  }
+
+  renderGallery();
+}
+
+function saveProfile(){
+  ["displayName","username","infiniId","level","bio"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) STATE[id]=el.value;
+  });
+  saveState().then(()=>alert("บันทึกแล้ว"));
+}
+
+document.getElementById("idCoverInput").addEventListener("change", async e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  const res=await uploadFile(file);
+  if(!res.ok){alert("อัปโหลดไม่สำเร็จ");return}
+  STATE.idCover={src:res.url+"?t="+Date.now(),type:res.type};
+  await saveState();
+  setBox("idCoverBox","idCoverEmpty",STATE.idCover.src,STATE.idCover.type);
+});
+
+function renderGallery(){
+  const grid=document.getElementById("galleryGrid");
+  grid.innerHTML="";
+  const items=STATE.gallery||[];
+  items.forEach(item=>{
+    const cell=document.createElement("div");
+    cell.className="gallery-cell";
+    cell.appendChild(mediaEl(item.src,item.type));
+    grid.appendChild(cell);
+  });
+  while(grid.children.length<4){
+    const cell=document.createElement("div");
+    cell.className="gallery-cell";
+    cell.textContent="รูป "+(grid.children.length+1);
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById("galleryInput").addEventListener("change", async e=>{
+  const files=[...e.target.files];
+  if(!files.length) return;
+  STATE.gallery=STATE.gallery||[];
+  for(const file of files){
+    const res=await uploadFile(file);
+    if(res.ok){
+      STATE.gallery.push({src:res.url+"?t="+Date.now(),type:res.type});
+    }
+  }
+  await saveState();
+  renderGallery();
+});
+
+function openSearch(){
+  document.getElementById("webOverlay").style.display="flex";
+}
+function closeSearch(){
+  document.getElementById("webOverlay").style.display="none";
+}
+function runSearch(){
+  const q=document.getElementById("webInput").value.trim();
+  if(q) document.getElementById("webFrame").src="https://www.google.com/search?igu=1&q="+encodeURIComponent(q);
+}
+loadState();
+</script>
+</body>
+</html>
+'''
+
+GATE_HTML = r'''
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>CREATIVE GATE</title>
+<style>
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  width:100%;
+  min-height:100%;
+  background:#050100;
+  color:#fff;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+body{overflow-x:hidden}
+.page{
+  min-height:100vh;
+  background:radial-gradient(circle at top,#170800,#050100 45%,#000);
+  padding-bottom:150px;
+}
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:30;
+  height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:0 14px;
+  background:rgba(0,0,0,.9);
+  border-bottom:1px solid rgba(255,132,0,.35);
+}
+.brand{
+  color:#ff8a1c;
+  font-weight:900;
+  letter-spacing:.12em;
+  font-size:14px;
+}
+.btn,label.btn{
+  border:1px solid rgba(255,132,0,.62);
+  background:rgba(0,0,0,.78);
+  color:#ffc17d;
+  border-radius:999px;
+  padding:10px 14px;
+  font-size:13px;
+  font-weight:900;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.btn.orange{
+  background:#ff9a1f;
+  color:#050505;
+  border:0;
+}
+input[type=file]{display:none}
+.gate-wrap{
+  padding:14px 14px 150px;
+}
+.gate-card{
+  height:calc(100vh - 210px);
+  min-height:520px;
+  border-radius:30px;
+  border:1px solid rgba(255,132,0,.62);
+  background:#050505;
+  overflow:hidden;
+  position:relative;
+}
+.gate-card img,.gate-card video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.empty{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:24px;
+  background:
+    linear-gradient(to top,rgba(0,0,0,.92),rgba(0,0,0,.18)),
+    radial-gradient(circle at top,#301400,#050505 70%);
+}
+.empty h1{
+  margin:0 0 10px;
+  color:#ff9a2c;
+  font-size:40px;
+  letter-spacing:.08em;
+}
+.empty p{
+  margin:0;
+  color:#aaa;
+  font-size:14px;
+}
+.actions{
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:18px;
+  z-index:20;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.actions label,.actions button{
+  min-height:62px;
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <a class="btn" href="/id-home">← ID Home</a>
+    <div class="brand">CREATIVE GATE</div>
+    <button class="btn" onclick="alert('ค้นหายังอยู่หน้า ID Home')">ค้นหา</button>
+  </div>
+
+  <div class="gate-wrap">
+    <div class="gate-card" id="gateCard">
+      <div class="empty" id="gateEmpty">
+        <h1>CREATIVE<br>GATE</h1>
+        <p>อัปโหลดรูปตึก / Space Box / ประตูเข้า Creative Room</p>
+      </div>
+
+      <div class="actions">
+        <label class="btn">
+          อัปโหลดรูปตึก
+          <input id="gateInput" type="file" accept="image/*,video/*">
+        </label>
+        <button class="btn orange" onclick="location.href='/'">เข้าตึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={};
+
+function mediaEl(src,type){
+  let el;
+  if(String(type||"").startsWith("video")){
+    el=document.createElement("video");
+    el.controls=true; el.loop=true; el.muted=true; el.playsInline=true;
+  }else{
+    el=document.createElement("img");
+  }
+  el.src=src;
+  return el;
+}
+
+function setGate(src,type){
+  const card=document.getElementById("gateCard");
+  const empty=document.getElementById("gateEmpty");
+  card.querySelectorAll("img,video").forEach(x=>x.remove());
+  if(empty) empty.style.display="none";
+  card.insertBefore(mediaEl(src,type), card.firstChild);
+}
+
+function uploadFile(file){
+  const form=new FormData();
+  form.append("file", file);
+  return fetch("/api/id-entry/upload",{method:"POST",body:form}).then(r=>r.json());
+}
+function saveState(){
+  return fetch("/api/id-entry/state",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(STATE||{})
+  });
+}
+function loadState(){
+  fetch("/api/id-entry/state?t="+Date.now())
+    .then(r=>r.json())
+    .then(d=>{
+      STATE=d||{};
+      if(STATE.gate) setGate(STATE.gate.src,STATE.gate.type);
+    });
+}
+
+document.getElementById("gateInput").addEventListener("change", async e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+
+  const res=await uploadFile(file);
+  if(!res.ok){
+    alert("อัปโหลดไม่สำเร็จ");
+    return;
+  }
+
+  STATE.gate={src:res.url+"?t="+Date.now(),type:res.type};
+  await saveState();
+  setGate(STATE.gate.src,STATE.gate.type);
+});
+
+loadState();
+</script>
+</body>
+</html>
+'''
+
+def install_id_entry_7000(app: FastAPI):
+    @app.post("/api/id-entry/upload")
+    async def id_entry_upload(file: UploadFile = File(...)):
+        UPLOAD_DIR.mkdir(exist_ok=True)
+
+        content_type = file.content_type or "application/octet-stream"
+        ext = Path(file.filename or "").suffix.lower()
+
+        if not ext:
+            if content_type.startswith("image/"):
+                ext = ".jpg"
+            elif content_type.startswith("video/"):
+                ext = ".mp4"
+            else:
+                ext = ".bin"
+
+        name = f"{uuid.uuid4().hex}{ext}"
+        out = UPLOAD_DIR / name
+        out.write_bytes(await file.read())
+
+        return JSONResponse({
+            "ok": True,
+            "url": f"/id-entry-media/{name}",
+            "type": content_type
+        })
+
+    @app.get("/id-entry-media/{name}")
+    async def id_entry_media(name: str):
+        path = UPLOAD_DIR / name
+        if not path.exists():
+            return JSONResponse({"ok": False, "error": "file not found"}, status_code=404)
+        return FileResponse(path)
+
+    @app.get("/api/id-entry/state")
+    async def id_entry_get_state():
+        if not STATE_FILE.exists():
+            return JSONResponse({})
+        try:
+            return JSONResponse(json.loads(STATE_FILE.read_text(encoding="utf-8")))
+        except Exception:
+            return JSONResponse({})
+
+    @app.post("/api/id-entry/state")
+    async def id_entry_save_state(request: Request):
+        try:
+            data = await request.json()
+            STATE_FILE.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            return JSONResponse({"ok": True})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+    @app.get("/id-home", response_class=HTMLResponse)
+    async def id_home():
+        return HTMLResponse(ID_ENTRY_HTML)
+
+    @app.get("/id", response_class=HTMLResponse)
+    async def id_home_short():
+        return HTMLResponse(ID_ENTRY_HTML)
+
+    @app.get("/creative-gate", response_class=HTMLResponse)
+    async def creative_gate():
+        return HTMLResponse(GATE_HTML)

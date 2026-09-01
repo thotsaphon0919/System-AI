@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "groups": {
+    "2.2": {
+      "group_no": "2.2",
+      "pages": [
+        {
+          "id": "detail_191aebec4a95",
+          "no": "2.2.1",
+          "media_url": "",
+          "media_type": "",
+          "detail": "",
+          "zone": "",
+          "messages": [],
+          "created_at": 1786033863,
+          "updated_at": 1786033863
+        }
+      ],
+      "created_at": 1786033863,
+      "updated_at": 1786043731
+    }
+  }
+}

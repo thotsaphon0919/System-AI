@@ -1,0 +1,482 @@
+{
+  "rewards": {
+    "finance-1": {
+      "stored_name": "finance-1-c57b78438dd5.jpg",
+      "original_name": "6796.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 234777
+    },
+    "tech-1": {
+      "stored_name": "tech-1-7b3632e04dec.jpg",
+      "original_name": "7316.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 459077
+    },
+    "fashion-1": {
+      "stored_name": "fashion-1-e7571ee8bf34.png",
+      "original_name": "4409.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2522740
+    },
+    "fashion-2": {
+      "stored_name": "fashion-2-c3a03f77ca2b.png",
+      "original_name": "4410.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2606639
+    },
+    "fashion-3": {
+      "stored_name": "fashion-3-26659505d752.mp4",
+      "original_name": "5388.mp4",
+      "content_type": "video/mp4",
+      "kind": "video",
+      "size": 2708658
+    },
+    "fashion-4": {
+      "stored_name": "fashion-4-47f6ef05690b.mp4",
+      "original_name": "4940.mp4",
+      "content_type": "video/mp4",
+      "kind": "video",
+      "size": 2153313
+    },
+    "education-1": {
+      "stored_name": "education-1-7f2ca8a47f94.png",
+      "original_name": "5369.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 375717
+    },
+    "education-2": {
+      "stored_name": "education-2-63eae2ce5762.png",
+      "original_name": "7203.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1900332
+    },
+    "auto-1": {
+      "stored_name": "auto-1-071ef685517d.png",
+      "original_name": "4597.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2311406
+    },
+    "auto-2": {
+      "stored_name": "auto-2-1ef1a4c358c0.png",
+      "original_name": "5245.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1852428
+    },
+    "auto-3": {
+      "stored_name": "auto-3-bfe8b1f82c93.png",
+      "original_name": "5050.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2372561
+    },
+    "auto-4": {
+      "stored_name": "auto-4-dd5cc5cf15d5.png",
+      "original_name": "5055.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2539396
+    },
+    "auto-5": {
+      "stored_name": "auto-5-936419658aa4.png",
+      "original_name": "4410.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2606639
+    },
+    "auto-6": {
+      "stored_name": "auto-6-09785a1b4a12.png",
+      "original_name": "6014.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1621661
+    }
+  },
+  "ads": {
+    "finance-1": {
+      "stored_name": "finance-1-aeb2671ae96c.png",
+      "original_name": "5804.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 4280320
+    },
+    "tech-1": {
+      "stored_name": "tech-1-a12c56ad00e5.jpg",
+      "original_name": "6601.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 829088
+    },
+    "fashion-1": {
+      "stored_name": "fashion-1-e7571ee8bf34.png",
+      "original_name": "4409.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2522740
+    },
+    "fashion-2": {
+      "stored_name": "fashion-2-c3a03f77ca2b.png",
+      "original_name": "4410.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2606639
+    },
+    "fashion-3": {
+      "stored_name": "fashion-3-26659505d752.mp4",
+      "original_name": "5388.mp4",
+      "content_type": "video/mp4",
+      "kind": "video",
+      "size": 2708658
+    },
+    "fashion-4": {
+      "stored_name": "fashion-4-47f6ef05690b.mp4",
+      "original_name": "4940.mp4",
+      "content_type": "video/mp4",
+      "kind": "video",
+      "size": 2153313
+    },
+    "education-1": {
+      "stored_name": "education-1-7f2ca8a47f94.png",
+      "original_name": "5369.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 375717
+    },
+    "education-2": {
+      "stored_name": "education-2-63eae2ce5762.png",
+      "original_name": "7203.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1900332
+    },
+    "auto-1": {
+      "stored_name": "auto-1-071ef685517d.png",
+      "original_name": "4597.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2311406
+    },
+    "auto-2": {
+      "stored_name": "auto-2-1ef1a4c358c0.png",
+      "original_name": "5245.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1852428
+    },
+    "auto-3": {
+      "stored_name": "auto-3-bfe8b1f82c93.png",
+      "original_name": "5050.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2372561
+    },
+    "auto-4": {
+      "stored_name": "auto-4-dd5cc5cf15d5.png",
+      "original_name": "5055.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2539396
+    },
+    "auto-5": {
+      "stored_name": "auto-5-936419658aa4.png",
+      "original_name": "4410.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2606639
+    },
+    "auto-6": {
+      "stored_name": "auto-6-09785a1b4a12.png",
+      "original_name": "6014.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1621661
+    },
+    "tech-2": {
+      "stored_name": "tech-2-f7e356a69dad.mp4",
+      "original_name": "4940.mp4",
+      "content_type": "video/mp4",
+      "kind": "video",
+      "size": 2153313
+    },
+    "tech-3": {
+      "stored_name": "tech-3-082f6b7e557b.png",
+      "original_name": "5154.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2199343
+    },
+    "tech-4": {
+      "stored_name": "tech-4-517450904a4c.jpg",
+      "original_name": "8407.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 287908
+    },
+    "tech-5": {
+      "stored_name": "tech-5-f1f40ca1e4ab.png",
+      "original_name": "5152.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2419871
+    },
+    "tech-6": {
+      "stored_name": "tech-6-2af3c08ff3f9.png",
+      "original_name": "4372.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 5154816
+    },
+    "fashion-5": {
+      "stored_name": "fashion-5-50a51df9de2b.mp4",
+      "original_name": "5808.mp4",
+      "content_type": "video/mp4",
+      "kind": "video",
+      "size": 2485337
+    },
+    "fashion-6": {
+      "stored_name": "fashion-6-cd81e5d3c43c.png",
+      "original_name": "4430.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1804703
+    },
+    "food-1": {
+      "stored_name": "food-1-026a4c13a065.png",
+      "original_name": "5051.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1789547
+    },
+    "food-2": {
+      "stored_name": "food-2-13f198d26065.png",
+      "original_name": "4432.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2013610
+    },
+    "food-3": {
+      "stored_name": "food-3-dd69af524b1b.png",
+      "original_name": "4431.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1763388
+    },
+    "food-4": {
+      "stored_name": "food-4-eb21c5d4b61d.png",
+      "original_name": "4433.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2136512
+    },
+    "food-5": {
+      "stored_name": "food-5-244a6eab3b38.png",
+      "original_name": "4394.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1781014
+    },
+    "food-6": {
+      "stored_name": "food-6-5c26bf02be0e.png",
+      "original_name": "5357.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1747523
+    },
+    "game-1": {
+      "stored_name": "game-1-d78f03d163ee.png",
+      "original_name": "5153.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2629872
+    },
+    "game-2": {
+      "stored_name": "game-2-a52eabe6145c.png",
+      "original_name": "5359.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1592191
+    },
+    "game-3": {
+      "stored_name": "game-3-65fb11ab175c.jpg",
+      "original_name": "6500.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 492412
+    },
+    "game-4": {
+      "stored_name": "game-4-e473c4f5cb41.jpg",
+      "original_name": "6423.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 247049
+    },
+    "game-5": {
+      "stored_name": "game-5-d28f97889df1.png",
+      "original_name": "3269.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 360389
+    },
+    "game-6": {
+      "stored_name": "game-6-b616f0739daa.png",
+      "original_name": "6014.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1621661
+    },
+    "finance-2": {
+      "stored_name": "finance-2-0d4d88def0ee.jpg",
+      "original_name": "6415.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 47777
+    },
+    "finance-3": {
+      "stored_name": "finance-3-49f453285d88.png",
+      "original_name": "4371.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 5650432
+    },
+    "finance-4": {
+      "stored_name": "finance-4-2a7f22c25611.png",
+      "original_name": "5394.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2544471
+    },
+    "finance-5": {
+      "stored_name": "finance-5-417d0bb55ab3.png",
+      "original_name": "5029.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2182856
+    },
+    "finance-6": {
+      "stored_name": "finance-6-e26fbad9b3f1.png",
+      "original_name": "5054.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2443305
+    },
+    "travel-1": {
+      "stored_name": "travel-1-d7cfc87d9419.png",
+      "original_name": "4988.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2452826
+    },
+    "travel-2": {
+      "stored_name": "travel-2-f8e68a3c12fa.png",
+      "original_name": "5370.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 375141
+    },
+    "travel-3": {
+      "stored_name": "travel-3-e979b46b9025.png",
+      "original_name": "3299.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 5433344
+    },
+    "travel-4": {
+      "stored_name": "travel-4-0152ef08fccf.png",
+      "original_name": "4538.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2648926
+    },
+    "travel-5": {
+      "stored_name": "travel-5-402e863d013f.png",
+      "original_name": "6032.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 395423
+    },
+    "travel-6": {
+      "stored_name": "travel-6-44464db4d237.png",
+      "original_name": "6031.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 215780
+    },
+    "education-3": {
+      "stored_name": "education-3-ab8e0aa348ee.png",
+      "original_name": "4654.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 3524608
+    },
+    "education-4": {
+      "stored_name": "education-4-e1b8f854e380.png",
+      "original_name": "3532.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 1628155
+    },
+    "education-5": {
+      "stored_name": "education-5-c8b3c88882ab.jpg",
+      "original_name": "7367.jpg",
+      "content_type": "image/jpeg",
+      "kind": "image",
+      "size": 195514
+    },
+    "education-6": {
+      "stored_name": "education-6-efbdf4e97f20.png",
+      "original_name": "3300.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 5423104
+    },
+    "lifestyle-1": {
+      "stored_name": "lifestyle-1-914d9579a612.png",
+      "original_name": "3981.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 4169728
+    },
+    "lifestyle-2": {
+      "stored_name": "lifestyle-2-a115210a7390.png",
+      "original_name": "932.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 6500352
+    },
+    "lifestyle-3": {
+      "stored_name": "lifestyle-3-0440cb729679.png",
+      "original_name": "933.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 7038976
+    },
+    "lifestyle-4": {
+      "stored_name": "lifestyle-4-61aedd29dbc8.png",
+      "original_name": "934.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 7055360
+    },
+    "lifestyle-5": {
+      "stored_name": "lifestyle-5-d1a7f49a3bd8.png",
+      "original_name": "3294.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2501340
+    },
+    "lifestyle-6": {
+      "stored_name": "lifestyle-6-a146e48df916.png",
+      "original_name": "3295.png",
+      "content_type": "image/png",
+      "kind": "image",
+      "size": 2796141
+    }
+  }
+}

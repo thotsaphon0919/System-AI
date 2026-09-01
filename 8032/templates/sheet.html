@@ -1,0 +1,372 @@
+
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .fullscreen-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    object-fit: cover;
+    background: #050814;
+    border-radius: 0;
+    margin: 0;
+}
+    .img-thumb { display: inline-block; width: 70px; height: 70px; object-fit: cover; border-radius: 8px; margin: 4px; cursor: pointer; border: 2px solid transparent; }
+    .img-thumb:hover { border-color: var(--blue); }
+    .popup { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-radius: 20px 20px 0 0; padding: 20px; border: 1px solid var(--border); max-height: 80vh; overflow-y: auto; }
+    .popup.active { display: block; }
+</style>
+
+<div class="container" style="max-width: 100%; padding: 0 8px;">
+    <a href="/control-room" style="color:var(--blue); display:inline-block; margin-bottom:12px; text-decoration:none;">← กลับห้องควบคุม</a>
+    <h2 style="text-align:left; margin-bottom:16px;">{{ sheet.title }}</h2>
+
+    
+{% if child_sheets %}
+<style>
+.room-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-bottom:16px;
+}
+.room-card{
+  position:relative;
+  aspect-ratio:4/3;
+  overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:#101722;
+  color:white;
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.room-card img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.room-label{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:7px;
+  background:linear-gradient(transparent,rgba(0,0,0,.88));
+  font-size:12px;
+  font-weight:700;
+}
+.room-nav{
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+}
+.room-empty{
+  opacity:.22;
+  border-style:dashed;
+}
+</style>
+
+<div class="room-grid">
+
+  {% for child in child_sheets[:9] %}
+    {% set cover = namespace(url="") %}
+    {% for item in child.get("media", []) %}
+      {% if not cover.url and item.get("content_type", "").startswith("image/") %}
+        {% set cover.url = item.get("url", "") %}
+      {% endif %}
+    {% endfor %}
+
+    <a class="room-card" href="/sheet/{{ child.id }}">
+      {% if cover.url %}
+        <img src="{{ cover.url }}" alt="{{ child.title }}">
+      {% endif %}
+      <div class="room-label">
+        {{ child.display_code or "" }} {{ child.title }}
+      </div>
+    </a>
+  {% endfor %}
+
+  {% for unused in range(9 - ([child_sheets|length, 9]|min)) %}
+    <div class="room-card room-empty"></div>
+  {% endfor %}
+
+  {% if previous_sheet_id %}
+    <a class="room-card room-nav" href="/sheet/{{ previous_sheet_id }}">
+      ← ย้อนกลับ
+    </a>
+  {% else %}
+    <div class="room-card room-empty"></div>
+  {% endif %}
+
+  {% if child_sheets|length > 9 %}
+    {% set child = child_sheets[9] %}
+    {% set cover = namespace(url="") %}
+    {% for item in child.get("media", []) %}
+      {% if not cover.url and item.get("content_type", "").startswith("image/") %}
+        {% set cover.url = item.get("url", "") %}
+      {% endif %}
+    {% endfor %}
+
+    <a class="room-card" href="/sheet/{{ child.id }}">
+      {% if cover.url %}
+        <img src="{{ cover.url }}" alt="{{ child.title }}">
+      {% endif %}
+      <div class="room-label">
+        {{ child.display_code or "" }} {{ child.title }}
+      </div>
+    </a>
+  {% else %}
+    <div class="room-card room-empty"></div>
+  {% endif %}
+
+  {% if next_sheet_id %}
+    <a class="room-card room-nav" href="/sheet/{{ next_sheet_id }}">
+      ถัดไป →
+    </a>
+  {% else %}
+    <div class="room-card room-empty"></div>
+  {% endif %}
+
+</div>
+{% endif %}
+
+        {% set media_items = sheet.get("media", []) %}
+        {% set main_media = media_items[-1] if media_items else none %}
+
+        {% if main_media %}
+            <div id="mainMediaWrap">
+                {% if main_media.get("content_type", "").startswith("video/") %}
+                    <video
+                        class="fullscreen-img"
+                        src="{{ main_media.get('url', '') }}"
+                        autoplay
+                        muted
+                        loop
+                        playsinline
+                        controls
+                    ></video>
+                {% else %}
+                    <img
+                        class="fullscreen-img"
+                        src="{{ main_media.get('url', '') }}"
+                        alt="สื่อหลัก"
+                    >
+                {% endif %}
+            </div>
+
+            <div style="text-align:center;margin-bottom:16px;">
+                {% for item in media_items %}
+                    {% if item.get("content_type", "").startswith("video/") %}
+                        <video
+                            src="{{ item.get('url', '') }}"
+                            class="img-thumb"
+                            muted
+                            playsinline
+                            onclick="changeMedia('{{ item.get('url', '') }}','video')"
+                        ></video>
+                    {% elif item.get("content_type", "").startswith("image/") %}
+                        <img
+                            src="{{ item.get('url', '') }}"
+                            class="img-thumb"
+                            onclick="changeMedia('{{ item.get('url', '') }}','image')"
+                        >
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="
+                height:45vh;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                color:#7a8cb8;
+                border:1px dashed var(--border);
+                border-radius:12px;
+                margin-bottom:16px;
+            ">
+                ยังไม่มีรูปภาพหรือวิดีโอ
+            </div>
+        {% endif %}
+    <button onclick="document.getElementById('fileInput').click()" class="btn">📤 อัปโหลดรูปหรือวิดีโอ</button>
+    <form action="/api/sheets/{{ sheet_id }}/upload" method="post" enctype="multipart/form-data" style="display:none;">
+        <input type="file" id="fileInput" name="file" accept="image/*,video/mp4,video/webm" onchange="uploadSheetImage(this)">
+    </form>
+        <!-- INFINI_SUBCARD_GRID_V1 -->
+        <style>
+        .subcard-grid{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:12px;
+            margin:18px 0 24px;
+        }
+        .subcard{
+            position:relative;
+            aspect-ratio:4/3;
+            overflow:hidden;
+            border:1px solid rgba(80,180,255,.55);
+            border-radius:16px;
+            background:#09152c;
+        }
+        .subcard img{
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            display:block;
+        }
+        .subcard-label{
+            position:absolute;
+            left:0;
+            right:0;
+            bottom:0;
+            padding:22px 10px 9px;
+            background:linear-gradient(transparent,rgba(0,0,0,.88));
+            color:white;
+            font-size:18px;
+            font-weight:800;
+        }
+        .subcard-empty{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:#7ddcff;
+            font-size:17px;
+            font-weight:800;
+            border-style:dashed;
+        }
+        </style>
+
+        <h3 style="margin:20px 0 12px;">การ์ดย่อย</h3>
+        <div class="subcard-grid">
+            {% for i in range(6) %}
+                {% set item = image_items[i] if i < image_items|length else none %}
+                <div class="subcard {% if not item %}subcard-empty{% endif %}"
+                     data-subcard-index="{{ i }}">
+                    {% if item %}
+                        <img src="{{ item.url }}" alt="การ์ดย่อย {{ i + 1 }}">
+                        <div class="subcard-label">
+                            {{ sheet.display_code or sheet.title }}.{{ i + 1 }}
+                        </div>
+                    {% else %}
+                        + เพิ่มรูป {{ sheet.display_code or sheet.title }}.{{ i + 1 }}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+
+
+    {% if sheet.images %}
+    <button onclick="openPopup()" class="btn btn-outline">🔗 เพิ่มลิงก์ให้รูป</button>
+    {% endif %}
+
+    <div id="linkPopup" class="popup">
+        <h3 style="margin-bottom:12px;">เชื่อมลิงก์</h3>
+        <form action="/sheet/{{ sheet_id }}/link" method="post">
+            <select name="image_file">
+                {% for img in sheet.images %}<option value="{{ img }}">{{ img }}</option>{% endfor %}
+            </select>
+            <input name="link_name" placeholder="ชื่อลิงก์" required>
+            <input name="link_target" placeholder="ลิงก์ปลายทาง" required>
+            <button type="submit" class="btn">บันทึก</button>
+            <button type="button" onclick="closePopup()" class="btn btn-outline">ปิด</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function changeMedia(url, type) {
+    const wrap = document.getElementById("mainMediaWrap");
+    if (!wrap) return;
+
+    if (type === "video") {
+        wrap.innerHTML = `
+            <video
+                class="fullscreen-img"
+                src="${url}"
+                autoplay
+                muted
+                loop
+                playsinline
+                controls
+            ></video>
+        `;
+    } else {
+        wrap.innerHTML = `
+            <img
+                class="fullscreen-img"
+                src="${url}"
+                alt="สื่อหลัก"
+            >
+        `;
+    }
+}
+function openPopup() { document.getElementById('linkPopup').classList.add('active'); }
+function closePopup() { document.getElementById('linkPopup').classList.remove('active'); }
+</script>
+
+<script>
+async function uploadSheetImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const response = await fetch(
+            "/api/sheets/{{ sheet_id }}/upload",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        alert("อัปโหลดสื่อสำเร็จ");
+        window.location.href = "/sheet/{{ sheet_id }}";
+    } catch (error) {
+        alert("อัปโหลดไม่สำเร็จ: " + error.message);
+    }
+}
+</script>
+
+
+<script>
+let startX = 0;
+let startY = 0;
+
+const prevId = {{ previous_sheet_id | tojson }};
+const nextId = {{ next_sheet_id | tojson }};
+
+document.addEventListener("touchstart", (e) => {
+    const t = e.changedTouches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+}, { passive: true });
+
+document.addEventListener("touchend", (e) => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+
+    if (Math.abs(dx) < 60) return;
+    if (Math.abs(dx) < Math.abs(dy)) return;
+
+    if (dx < 0 && nextId) {
+        window.location.href = `/sheet/${nextId}`;
+    }
+
+    if (dx > 0 && prevId) {
+        window.location.href = `/sheet/${prevId}`;
+    }
+}, { passive: true });
+</script>
+
+{% endblock %}

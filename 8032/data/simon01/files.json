@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "safe_name": "store_simon01_1783085863_1782914952063.mp4",
+      "original_name": "1782914952063.mp4",
+      "room_id": "store_simon01",
+      "size_bytes": 1555288,
+      "created_at": "2026-07-03T20:37:43.888499"
+    },
+    {
+      "safe_name": "life_simon01_1783093110_1781802152922.mp4",
+      "original_name": "1781802152922.mp4",
+      "room_id": "life_simon01",
+      "size_bytes": 1990687,
+      "created_at": "2026-07-03T22:38:30.408633"
+    }
+  ]
+}

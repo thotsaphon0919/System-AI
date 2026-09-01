@@ -1,0 +1,19 @@
+{
+  "created_at": 1785465126,
+  "goal": "",
+  "pattern": "basic",
+  "extra_note": "",
+  "scene_mode": "knowledge_scene",
+  "product_file": {
+    "name": "4590.png",
+    "stored": "ability_product_6eb50e49b0e54386ae37b01a81c678b5.png",
+    "url": "/ai-core-file/ability_product_6eb50e49b0e54386ae37b01a81c678b5.png",
+    "ext": ".png",
+    "text": "",
+    "section": "ability_product"
+  },
+  "scene_file": null,
+  "selected_scene": null,
+  "result": "โจทย์:\n-\n\nแพทเทิร์น:\nbasic\n\nคำสั่งพิเศษ:\n-\n\nสินค้า:\nใช้รูปสินค้าอัปโหลดใหม่: /ai-core-file/ability_product_6eb50e49b0e54386ae37b01a81c678b5.png\n\nฉาก:\nยังไม่มีฉากจากห้องความรู้ และไม่ได้อัปโหลดฉากใหม่\n\nข้อมูลที่ดึงจากห้องความรู้ AI จัดร้าน:\nยังไม่มีความรู้ AI จัดร้านในห้องความรู้\n\nวิธีทำงานของห้องความสามารถ:\n1. ใช้รูปสินค้าที่อัปโหลดในหน้านี้เป็นสินค้าหลักของงาน\n2. ถ้าเลือกใช้ฉากจากห้องความรู้ ให้ดึงรูปฉาก/reference จาก AI Shop Knowledge อัตโนมัติ\n3. ถ้าอัปโหลดฉากใหม่ ให้ใช้ฉากใหม่แทนฉากจากคลังเฉพาะรอบนี้\n4. ใช้ Rules, Prompt, Template, Design Note จากห้องความรู้ AI จัดร้านเป็นกฎหลัก\n5. จัดสินค้าให้เด่นกว่าฉาก\n6. ข้อความต้องอ่านง่าย ไม่บังสินค้า\n7. ถ้าเป็น catalog ให้จัดสินค้าเป็นหมวด ราคา/ไซซ์อ่านง่าย\n8. ถ้าเป็น market sheet ให้มีจุดขาย ราคา และปุ่มสั่งซื้อชัด",
+  "images": []
+}
